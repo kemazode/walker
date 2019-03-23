@@ -269,7 +269,7 @@ void Scenario::physic_light_render(const Object& viewer)
                     map_source(npx, npy).attr &= ~A_INVIS;
                     map_source(npx, npy).attr |= A_DIM;
 
-                    map_render(npx, npy).attr &= ~A_INVIS;
+                    map_render(npx, npy).attr &= ~(A_INVIS|A_DIM);
                     map_render(npx, npy).attr |= A_BOLD;
 
                     if (not_visible.find(m_map_render.text[npy*int(m_size) + npx].c) != not_visible.npos)

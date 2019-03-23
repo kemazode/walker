@@ -44,6 +44,8 @@ static Menu m_main[] =
 {
     {"Start New Game", Action(sc_load)},
     {"Create Map",     Action(Fa(Window::push), Args(&constructors[C_CREATE]))},
+    {"Scoreboard",     Action()},
+    {"Options",        Action()},
     {"Exit",           Action(Window::clear)},
 };
 
@@ -133,10 +135,10 @@ static struct {
 
 static Text texts [] = {
     Text(""),
-    Text("Welcome!", A_BOLD),
-    Text("Create your own map.", A_BOLD),
-    Text("Choose map size:", A_BOLD),
-    Text("Choose scenario:", A_BOLD)
+    Text("Welcome!", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
+    Text("Create your own map.", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
+    Text("Choose map size:", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
+    Text("Choose scenario:", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK))
 };
 
 extern int LINES;

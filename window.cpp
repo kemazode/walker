@@ -21,11 +21,16 @@ Window::Window(const Constructor &ct)
     m_win = newwin(ct.lines, ct.cols, ct.y, ct.x);
 
     /* Set window decorations */
-    wborder(m_win, '|', '|', '-', '-', '+', '+', '+', '+');
+    wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
+    box(m_win, 0, 0);
+    //wborder(m_win, '|', '|', '-', '-', '+', '+', '+', '+');
+    wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
+
+   // wbkgd(m_win, COLOR_PAIR(PAIR(COLOR_YELLOW, COLOR_BLACK)));
 
     /* Free height (lines) space */
-     freelines = ct.lines - SUB_WIN_LINES_RELATIVE;
-     freecols =  ct.cols  - SUB_WIN_COLS_RELATIVE;
+    freelines = ct.lines - SUB_WIN_LINES_RELATIVE;
+    freecols =  ct.cols  - SUB_WIN_COLS_RELATIVE;
 
     /* Text height, position computation */
     int th = 0;
@@ -58,7 +63,10 @@ Window::Window(const Constructor &ct)
         m_items = new ITEM *[ct.msize + 1];
         for (size_t i = 0; i < ct.msize; ++i) {
             m_items[i] = new_item(ct.m[i].label.c_str(), " ");
-            m_items[i]->userptr = &ct.m[i];
+            if (ct.m[i].act.empty())
+                item_opts_off(m_items[i], O_SELECTABLE);
+            else
+                m_items[i]->userptr = &ct.m[i];
 
         }
         m_items[ct.msize] = nullptr;
@@ -68,8 +76,14 @@ Window::Window(const Constructor &ct)
         set_menu_win(m_menu, m_win);
         set_menu_sub(m_menu, m_sub_m);
 
+        /* For menu scrolling */
+        set_menu_format(m_menu, menu_height, 1);
+
         /* Set menu decorations */
-        set_menu_mark(m_menu, " ");
+        set_menu_mark(m_menu, " * ");
+        set_menu_grey(m_menu, A_DIM);
+        set_menu_fore(m_menu, PAIR(MYCOLOR, COLOR_BLACK)|A_BOLD);
+        set_menu_back(m_menu, PAIR(COLOR_WHITE, COLOR_BLACK));
 
         /* Attaching */
         post_menu(m_menu);
@@ -141,6 +155,7 @@ void Window::_menu_driver(int act) const
             temp->act.exec();
         return;
     }
+
     ::menu_driver(m_menu, act);
     this->refresh();
 }

@@ -7,7 +7,7 @@
 
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
 
-#define PAIR(A, B) (B*8 + (A + 1))
+#define PAIR(A, B) COLOR_PAIR(B*8 + (A + 1))
 
 #define COLOR_BLACK   	0
 #define COLOR_RED	    1
@@ -17,6 +17,8 @@
 #define COLOR_MAGENTA	5
 #define COLOR_CYAN	    6
 #define COLOR_WHITE	    7
+
+#define MYCOLOR COLOR_GREEN
 
 #define F_SCENARIOS ".config/mygame/scenarios/"
 #define F_GENERATIONS ".config/mygame/generations/"
@@ -41,6 +43,8 @@ typedef struct Action {
     Action(Fv f) : fv(f), args_needed(false) {}
 
     Action() : fa(nullptr), args_needed(false), args() {}
+
+    bool empty() const { return fa == nullptr && fv == nullptr; }
 
     void exec() const {
         if (args_needed)

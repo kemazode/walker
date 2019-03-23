@@ -12,10 +12,10 @@ static inline String nextgen(const String &s, int count);
 static char textures[] = { '~', '#', '\'', '`' };
 
 static std::unordered_map<char, attr_t> color = {
-    {'~',  COLOR_PAIR(PAIR(COLOR_BLUE, COLOR_BLACK))|A_INVIS},
-    {'#',  COLOR_PAIR(PAIR(COLOR_WHITE, COLOR_BLACK))|A_INVIS},
-    {'\'', COLOR_PAIR(PAIR(COLOR_GREEN, COLOR_BLACK))|A_INVIS},
-    {'`',  COLOR_PAIR(PAIR(COLOR_GREEN, COLOR_BLACK))|A_INVIS},
+    {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)|A_INVIS},
+    {'#',  PAIR(COLOR_WHITE, COLOR_BLACK)|A_INVIS},
+    {'\'', PAIR(COLOR_GREEN, COLOR_BLACK)|A_INVIS},
+    {'`',  PAIR(COLOR_GREEN, COLOR_BLACK)|A_INVIS},
 };
 
 /* SCENARIO FORMAT:

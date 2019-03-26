@@ -64,7 +64,6 @@ Window::Window(const Constructor &ct)
         int menu_h = (int(ct.m.size()) < freelines)? int(ct.m.size()): freelines - nextline;
 
         m_sub_m = derwin(m_win, menu_h, freecols, nextline, SUB_WIN_X);
-        //mvwprintw(m_win, nextline, 1, "Test, test, test... TEST, TEST, TEST");
 
         /* Create items from Menu* m */
         m_items = new ITEM *[ct.m.size() + 1];
@@ -107,9 +106,6 @@ Window::Window(const Constructor &ct)
 
     /* Set hooks */
     m_hooks = &ct.h;
-
-//        box(m_sub_m, 0, 0);
-//        box(m_sub_t, 0, 0);
 
     /* Panel creation */
     m_pan = new_panel(m_win);
@@ -223,12 +219,15 @@ void Window::_print(const Text &t)
 
     if (th != cth) {
         if (m_sub_m) {
-            int new_menu_height = freelines - th;
+
+            int it_c = item_count(m_menu);
+            int menu_h = (it_c < freelines)? it_c : freelines - th - 1;
 
             unpost_menu(m_menu);
+
             delwin(m_sub_m);
 
-            m_sub_m = derwin(m_win, new_menu_height,
+            m_sub_m = derwin(m_win, menu_h,
                              freecols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 

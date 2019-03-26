@@ -4,7 +4,7 @@
 #include <sys/stat.h>
 #include <cstring>
 #include <dirent.h>
-#include <errno.h>
+#include <cerrno>
 #include "window.hpp"
 #include "scene.hpp"
 #include "utils.hpp"

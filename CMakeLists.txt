@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 2.8)
 
 project(Walker)
-set(CMAKE_CXX_FLAGS "-lncursesw -lm -lpanelw -lmenuw -lboost_system -lboost_filesystem")
+set(CMAKE_CXX_FLAGS "-lncursesw -lm -lpanelw -lmenuw")
 set(SOURCES main.cpp
             window.cpp
             scene.cpp

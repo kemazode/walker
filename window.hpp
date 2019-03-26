@@ -6,6 +6,7 @@
 #include <menu.h>
 #include <cstring>
 #include <vector>
+//#include <utility>
 #include "utils.hpp"
 
 using std::vector;
@@ -36,6 +37,11 @@ public:
     struct Menu {
         Menu() : label(), act() {}
         Menu(const String &l, const Action &a) : label(l), act(a) {}
+//        Menu(const Menu &m) {
+//            label = m.label;
+//            act = m.act;
+//        }
+
         String label;
         Action act;
     };
@@ -82,8 +88,12 @@ private:
 public:
     // prefix "a" - union "Args" as function argument
 
-    static Window* push(const Constructor &c)
+    static Window *push(const Constructor &c)
     { return (topw = new Window(c)); }
+
+//    template <typename ...Args>
+//    static Window *emplace_push(Args&&... args)
+//    { return push(std::forward<Args>(args)...); }
 
     // ~Window() changes topw to below Window * (by PANEL stack)
     static void pop()

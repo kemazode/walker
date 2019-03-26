@@ -74,10 +74,11 @@ bool Scenario::load(const String &f, Text &err)
     } catch (std::ios_base::failure &) {
         if (!file.is_open())
            err = "We can't open file \"" + f + "\"";
-        else
+        else {
            err = "Something went wrong during reading the file \"" + f + "\".";
+           file.close();
+        }
 
-        file.close();
         return false;
 
     } catch (const String& fail) {
@@ -117,7 +118,7 @@ bool Scenario::gen(const String &f, size_t size, Text& err)
         for (size_t y = 0; y < size; ++y) {
             for (size_t x = 0; x < size; ++x)
             {
-                unsigned seed = unsigned(perlin2d(x, y, 0.05f, 10)*10);
+                auto seed = unsigned(perlin2d(x, y, 0.05f, 10)*10);
                 fil << textures[seed % SIZE(textures)];
             }
             fil << '\n';
@@ -270,7 +271,7 @@ void Scenario::physic_light_render(const Object& viewer)
                     map_render(npx, npy).attr &= ~(A_INVIS|A_DIM);
                     map_render(npx, npy).attr |= A_BOLD;
 
-                    if (not_vis.find(map_render(npx, npy).c) != not_vis.npos)
+                    if (not_vis.find(map_render(npx, npy).c) != String::npos)
                         break;
                 }
             }

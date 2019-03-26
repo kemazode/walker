@@ -24,7 +24,6 @@
 #define F_SCENARIOS ".config/mygame/scenarios/"
 #define F_GENERATIONS ".config/mygame/generations/"
 
-
 using std::vector;
 using String = std::string;
 
@@ -36,7 +35,7 @@ typedef union Args {
     const void* ptr;
 } Args;
 
-typedef void (*Fa)(const Args);
+typedef void (*Fa)(Args);
 typedef void (*Fv)();
 
 typedef struct Action {
@@ -113,19 +112,20 @@ struct Text {
         return *this;
     }
 
-    cchar& operator[](int i) {
-        return this->text[i];
-    }
+    cchar& operator[](int i)
+    { return this->text[i]; }
 
-    cchar& operator[](size_t i) {
-        return this->text[i];
-    }
+    cchar& operator[](size_t i)
+    { return this->text[i]; }
 
     cchar* begin()
     { return text; }
 
     cchar* end()
     { return text + len; }
+
+    bool empty() const
+    { return len == 0; }
 
     void clear() {
         len = 0;

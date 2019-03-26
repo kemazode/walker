@@ -44,7 +44,7 @@ Window::Window(const Constructor &ct)
 
     int nextline = SUB_WIN_Y;
 
-    if (ct.t.len != 0)
+    if (!ct.t.empty())
     {
         int text_h = text_height(ct.t, freecols - 2*TEXT_X);
 
@@ -232,6 +232,7 @@ void Window::_print(const Text &t)
                              freecols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 
+            set_menu_win(m_menu, m_win);
             set_menu_sub(m_menu, m_sub_m);
             post_menu(m_menu);
         }
@@ -253,8 +254,7 @@ int text_height(const Text &t, int freecols)
     size_t old = 0;
     int text_height = 1, templen;
 
-    // Text("")
-    if (t.len == 0) return 0;
+    if (t.empty()) return 0;
 
     for (size_t i = 0; i < t.len; ++i)
         if (t.text[i].c == '\n')

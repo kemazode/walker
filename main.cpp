@@ -1,14 +1,18 @@
-#include <boost/filesystem.hpp>
 #include <csignal>
 #include <sys/ioctl.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <cstring>
+#include <dirent.h>
+#include <errno.h>
 #include "window.hpp"
 #include "scene.hpp"
 #include "utils.hpp"
 
-using Menu = Window::Menu;
-using Hook = Window::Hook;
+//namespace bf = boost::filesystem;
 
-namespace bf = boost::filesystem;
+using W = Window;
+using Ctrs = W::Constructor;
 
 enum
 {
@@ -48,97 +52,94 @@ enum
     C_END,
 };
 
-using Ctrs = Window::Constructor;
-using Pos = Window::Pos;
-
 // At any given time, we employ only one scenario
 static Scenario sc;
 static Text error;
 
 // Functions for working with the scenario
-static inline void sc_mvpx(const Args args);
-static inline void sc_mvpy(const Args args);
-static inline void sc_mvvx(const Args args);
-static inline void sc_mvvy(const Args args);
-static void sc_start(const Args args);
-static void sc_gen(const Args args);
+static inline void sc_mvpx(Args args);
+static inline void sc_mvpy(Args args);
+static inline void sc_mvvx(Args args);
+static inline void sc_mvvy(Args args);
+static void sc_start(Args args);
+static void sc_gen(Args args);
 static void sc_load();
 
-static inline void w_push(const Args args);
-static inline void w_set(const Args args);
-static inline void w_menu_driver(const Args args);
+static inline void w_push(Args args);
+static inline void w_set(Args args);
+static inline void w_menu_driver(Args args);
 
-static vector<vector<Menu>> menus =
+static vector<vector<W::Menu>> menus =
 {
     // MENU_NULL
     {},
 
     { // MENU MAIN
-      Menu("Start New Game", Action(sc_load)),
-      Menu("Create Map",     Action(w_push, Args(C_CREATE))),
-      Menu("Scoreboard",     Action()),
-      Menu("Options",        Action()),
-      Menu("Exit",           Action(Window::clear)),
+      W::Menu("Start New Game", Action(sc_load)),
+      W::Menu("Create Map",     Action(w_push, Args(C_CREATE))),
+      W::Menu("Scoreboard",     Action()),
+      W::Menu("Options",        Action()),
+      W::Menu("Exit",           Action(W::clear)),
     },
 
     { // MENU_GAME
-      Menu("Continue",       Action(Window::pop)),
-      Menu("Exit",           Action(w_set, Args(C_MAIN))),
+      W::Menu("Continue",       Action(W::pop)),
+      W::Menu("Exit",           Action(w_set, Args(C_MAIN))),
     },
 
     { // MENU_OKAY
-      Menu("OK",       Action(Window::pop)),
+      W::Menu("OK",       Action(W::pop)),
     },
 
     { // MENU_CRTE
-      Menu("Generate",       Action(w_push, Args(C_SIZES))),
+      W::Menu("Generate",       Action(w_push, Args(C_SIZES))),
     },
 
     { // MENU_SIZS
-      Menu("100x100", Action(Fa(sc_gen), Args(100))),
-      Menu("250x250", Action(Fa(sc_gen), Args(250))),
-      Menu("500x500", Action(Fa(sc_gen), Args(500))),
+      W::Menu("100x100", Action(Fa(sc_gen), Args(100))),
+      W::Menu("250x250", Action(Fa(sc_gen), Args(250))),
+      W::Menu("500x500", Action(Fa(sc_gen), Args(500))),
     },
 };
 
-static vector<vector<Hook>> hooks =
+static vector<vector<W::Hook>> hooks =
 {
     // HOOKS_NULL
     {},
 
     { // HOOKS_MAIN
-      Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
+      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
+      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
+      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
     },
 
     { // HOOKS_GAME
-      Hook('Q',       Action(w_push, Args(C_GAME_MENU))),
-      Hook('q',       Action(w_push, Args(C_GAME_MENU))),
+      W::Hook('Q',       Action(w_push, Args(C_GAME_MENU))),
+      W::Hook('q',       Action(w_push, Args(C_GAME_MENU))),
 
       // Player moving
-      Hook(KEY_DOWN,  Action(Fa(sc_mvpy), Args(1))),
-      Hook(KEY_UP,    Action(Fa(sc_mvpy), Args(-1))),
-      Hook(KEY_LEFT,  Action(Fa(sc_mvpx), Args(-1))),
-      Hook(KEY_RIGHT, Action(Fa(sc_mvpx), Args(1))),
+      W::Hook(KEY_DOWN,  Action(Fa(sc_mvpy), Args(1))),
+      W::Hook(KEY_UP,    Action(Fa(sc_mvpy), Args(-1))),
+      W::Hook(KEY_LEFT,  Action(Fa(sc_mvpx), Args(-1))),
+      W::Hook(KEY_RIGHT, Action(Fa(sc_mvpx), Args(1))),
 
       // Map moving
-      Hook('k', Action(Fa(sc_mvvy), Args(1))),
-      Hook('i', Action(Fa(sc_mvvy), Args(-1))),
-      Hook('j', Action(Fa(sc_mvvx), Args(-1))),
-      Hook('l', Action(Fa(sc_mvvx), Args(1))),
-      Hook('K', Action(Fa(sc_mvvy), Args(1))),
-      Hook('I', Action(Fa(sc_mvvy), Args(-1))),
-      Hook('J', Action(Fa(sc_mvvx), Args(-1))),
-      Hook('L', Action(Fa(sc_mvvx), Args(1))),
+      W::Hook('k', Action(Fa(sc_mvvy), Args(1))),
+      W::Hook('i', Action(Fa(sc_mvvy), Args(-1))),
+      W::Hook('j', Action(Fa(sc_mvvx), Args(-1))),
+      W::Hook('l', Action(Fa(sc_mvvx), Args(1))),
+      W::Hook('K', Action(Fa(sc_mvvy), Args(1))),
+      W::Hook('I', Action(Fa(sc_mvvy), Args(-1))),
+      W::Hook('J', Action(Fa(sc_mvvx), Args(-1))),
+      W::Hook('L', Action(Fa(sc_mvvx), Args(1))),
     },
 
     { // HOOKS_MENU
-      Hook('q',      Action(Window::pop)),
-      Hook('Q',      Action(Window::pop)),
-      Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
+      W::Hook('q',      Action(W::pop)),
+      W::Hook('Q',      Action(W::pop)),
+      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
+      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
+      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
     },
 };
 
@@ -160,20 +161,20 @@ static vector<Text> texts =
     Text("Choose scenario:", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK))
 };
 
-static vector<Window::Constructor> ctrs =
+static vector<W::Constructor> ctrs =
 {
-    Ctrs(Pos::POS_FULL, menus[MENU_MAIN], hooks[HOOKS_MAIN], texts[TEXT_MENU]),
-    Ctrs(Pos::POS_AVER, menus[MENU_NULL], hooks[HOOKS_GAME], texts[TEXT_NULL]),
-    Ctrs(Pos::POS_SMLL, menus[MENU_GAME], hooks[HOOKS_MENU], texts[TEXT_NULL]),
-    Ctrs(Pos::POS_SMLL, menus[MENU_OKAY], hooks[HOOKS_MENU], texts[TEXT_NULL]),
-    Ctrs(Pos::POS_FULL, menus[MENU_CRTE], hooks[HOOKS_MENU], texts[TEXT_CRTE]),
-    Ctrs(Pos::POS_SMLL, menus[MENU_SIZS], hooks[HOOKS_MENU], texts[TEXT_SIZS]),
+    Ctrs(W::Pos::POS_FULL, menus[MENU_MAIN], hooks[HOOKS_MAIN], texts[TEXT_MENU]),
+    Ctrs(W::Pos::POS_AVER, menus[MENU_NULL], hooks[HOOKS_GAME], texts[TEXT_NULL]),
+    Ctrs(W::Pos::POS_SMLL, menus[MENU_GAME], hooks[HOOKS_MENU], texts[TEXT_NULL]),
+    Ctrs(W::Pos::POS_SMLL, menus[MENU_OKAY], hooks[HOOKS_MENU], texts[TEXT_NULL]),
+    Ctrs(W::Pos::POS_FULL, menus[MENU_CRTE], hooks[HOOKS_MENU], texts[TEXT_CRTE]),
+    Ctrs(W::Pos::POS_SMLL, menus[MENU_SIZS], hooks[HOOKS_MENU], texts[TEXT_SIZS]),
 };
 
 static void _sig_winch(const int signo)
 {
     (void) signo;
-    struct winsize size;
+    struct winsize size {};
     ioctl(fileno(stdout), TIOCGWINSZ, reinterpret_cast<char *>(&size));
     resizeterm(size.ws_row, size.ws_col);
 }
@@ -190,77 +191,77 @@ int main()
     for (short i = 1; i <= 64; ++i)
         init_pair(i, (i - 1)%8, (i - 1)/8);
 
-    Window::push(ctrs[C_MAIN]);
+    W::push(ctrs[C_MAIN]);
 
-    while(Window::top())
-        Window::exechook(getch());
+    while(W::top())
+        W::exechook(getch());
 
-    Window::clear();
+    W::clear();
     endwin();
 }
 
-void w_set(const Args args)
-{ Window::set(ctrs[size_t(args.num)]); }
+void w_set(Args args)
+{ W::set(ctrs[size_t(args.num)]); }
 
-void w_push(const Args args)
-{ Window::push(ctrs[size_t(args.num)]); }
+void w_push(Args args)
+{ W::push(ctrs[size_t(args.num)]); }
 
-void w_menu_driver(const Args args)
-{ Window::menu_driver(args.num); }
+void w_menu_driver(Args args)
+{ W::menu_driver(args.num); }
 
-void sc_start(const Args args)
+void sc_start(Args args)
 {
     const char *scen_load = reinterpret_cast<const char *>(args.ptr);
 
     sc.clear();
 
     if (!sc.load(scen_load, error)) {
-        Window::push(ctrs[C_OK]);
-        Window::print(error);
+        W::push(ctrs[C_OK]);
+        W::print(error);
         return;
     }
 
-    Window::set(ctrs[C_GAME]);
-    sc.set_display(Window::getfreelines(), Window::getfreecols());
-    Window::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::set(ctrs[C_GAME]);
+    sc.set_display(W::getfreelines(), W::getfreecols());
+    W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
-void sc_mvpx(const Args args)
+void sc_mvpx(Args args)
 {
     sc.move_player(args.num, 0);
-    Window::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
-void sc_mvpy(const Args args)
+void sc_mvpy(Args args)
 {
     sc.move_player(0, args.num);
-    Window::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
-void sc_mvvx(const Args args)
+void sc_mvvx(Args args)
 {
     sc.move_view(args.num, 0);
-    Window::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
-void sc_mvvy(const Args args)
+void sc_mvvy(Args args)
 {
     sc.move_view(0, args.num);
-    Window::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
-void sc_gen(const Args args)
+void sc_gen(Args args)
 {
     String fil;
     bool success = sc.gen(size_t(args.num), error, fil);
 
-    Window::pop(); // Remove C_SIZES
-    Window::push(ctrs[C_OK]);
+    W::pop(); // Remove C_SIZES
+    W::push(ctrs[C_OK]);
 
     if (success)
-        Window::print("Map was successfully generated to " + fil);
+        W::print("Map was successfully generated to " + fil);
     else
-        Window::print(error);
+        W::print(error);
 }
 
 void sc_load()
@@ -268,49 +269,46 @@ void sc_load()
     const char * home = std::getenv("HOME");
 
     if (home == nullptr) {
-        Window::push(ctrs[C_OK]);
-        Window::print("HOME environment variable not set.");
+        W::push(ctrs[C_OK]);
+        W::print("HOME environment variable not set.");
         return;
     }
 
-    bf::path pwd(bf::operator/(home, F_SCENARIOS));
-
-    // Count the number of regular files
-    ulong cnt = 0;
-
-    if (!bf::exists(pwd)) {
-        bf::create_directory(pwd);
-    } else {
-        cnt = ulong(std::count_if(
-                    bf::directory_iterator(pwd),
-                    bf::directory_iterator(),
-                    static_cast<bool(*)(const bf::path&)>(bf::is_regular_file)));
-    }
-
-    if (cnt == 0) {
-        Window::push(ctrs[C_OK]);
-        Window::print("No files in \"" + pwd.string() + "\".");
-        return;
-    }
-
-    vector<Menu> load_menu;
-    load_menu.reserve(cnt);
+    String dir = home;
+    dir = dir + '/' + F_SCENARIOS;
 
     vector<String> files;
-    files.reserve(cnt);
 
-    // Fill an array of files with files from the scenario directory
-    for (auto &p : bf::directory_iterator(pwd)) {
-        files.emplace_back(p.path().string());
-        load_menu.emplace_back(p.path().filename().string(), Action(Fa(sc_start), files.back().c_str()));
+    DIR *dp;
+    struct dirent *dirp;
+
+    if((dp  = opendir(dir.c_str())) == nullptr) {
+        W::push(ctrs[C_OK]);
+        W::print("Error(" + String(strerror(errno)) + ") opening " + dir);
+        return;
+    }
+    while  ( (dirp = readdir(dp)) != nullptr )
+        if (dirp->d_type & DT_REG)
+            files.emplace_back(dir + dirp->d_name);
+
+    closedir(dp);
+
+    if (files.empty()) {
+        W::push(ctrs[C_OK]);
+        W::print("No files in \"" + dir + "\".");
+        return;
     }
 
-    auto wptr = Window::push(Window::Constructor(Pos::POS_SMLL, load_menu, hooks[HOOKS_MENU], texts[TEXT_MAPS]));
+    vector<W::Menu> load_menu;
+    load_menu.reserve(files.size());
+
+    for (auto &f : files)
+        load_menu.emplace_back(f.substr(f.rfind('/') + 1), Action(sc_start, f.c_str()));
+
+    auto wptr = W::push(Ctrs(W::Pos::POS_SMLL, load_menu, hooks[HOOKS_MENU], texts[TEXT_MAPS]));
 
     // Exit when a choice window a scenario will close
     // and may be free of memory
-    while(Window::has(wptr))
-        Window::exechook(getch());
-
-
+    while(W::has(wptr))
+        W::exechook(getch());
 }

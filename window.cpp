@@ -1,75 +1,86 @@
 #include "window.hpp"
 
-// FOR BORDERS 4
-#define SUB_WIN_LINES_RELATIVE 2
-#define SUB_WIN_COLS_RELATIVE 2
+#define LINES_BORDERS 2
+#define COLS_BORDERS 2
 #define SUB_WIN_Y 1
 #define SUB_WIN_X 1
+#define TEXT_X 1
 
-static int text_height(const Text *t, int freecols);
-static int waddtext(WINDOW *w, const Text *t);
-static int waddcchar(WINDOW *w, const Text::cchar *t);
+static int text_height(const Text &t, int freecols);
+static int waddtext(WINDOW *w, const Text &t);
+static int waddcchar(WINDOW *w, const cchar &t);
 
-#define    mvwaddtext(win,y,x,t) \
+#define mvwaddtext(win,y,x,t) \
     (wmove((win),(y),(x)) == ERR ? ERR : waddtext((win),(t)))
 
-// STATIC WINDOW VARIABLES AND CONSTS
 Window *Window::topw      = nullptr;
 
 Window::Window(const Constructor &ct)
 {
-    m_win = newwin(ct.lines, ct.cols, ct.y, ct.x);
+    int x = 0, y = 0, lines = 0, cols = 0;
+    m_pos = ct.p;
+
+    #define P(x_, y_, l_, c_) x = x_; y = y_; lines = l_; cols = c_;
+
+    switch (m_pos) {
+    case POS_FULL: P(0, 0, LINES, COLS);
+        break;
+    case POS_AVER: P(COLS/8, LINES/8, LINES - LINES/4, COLS - COLS/4);
+        break;
+    case POS_SMLL: P(COLS/4, LINES/4, LINES/2, COLS/2);
+        break;
+    }
+
+    m_win = newwin(lines, cols, y, x);
 
     /* Set window decorations */
     wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
     box(m_win, 0, 0);
-    //wborder(m_win, '|', '|', '-', '-', '+', '+', '+', '+');
     wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
 
-   // wbkgd(m_win, COLOR_PAIR(PAIR(COLOR_YELLOW, COLOR_BLACK)));
-
     /* Free height (lines) space */
-    freelines = ct.lines - SUB_WIN_LINES_RELATIVE;
-    freecols =  ct.cols  - SUB_WIN_COLS_RELATIVE;
+    freelines = lines - LINES_BORDERS;
+    freecols =  cols  - COLS_BORDERS;
 
-    /* Text height, position computation */
-    int th = 0;
+    int nextline = SUB_WIN_Y;
 
-    if (ct.t && ct.t->len != 0)
+    if (ct.t.len != 0)
     {
-        th = text_height(ct.t, freecols);
+        int text_h = text_height(ct.t, freecols - 2*TEXT_X);
 
         /* Text drawing */
-        m_sub_t = derwin(m_win, th, freecols, SUB_WIN_Y, SUB_WIN_X);
-        //mvwaddwstr(m_sub_t, 0, 0, t);
+        m_sub_t = derwin(m_win, text_h, freecols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
         mvwaddtext(m_sub_t, 0, 0, ct.t);
 
+        nextline += text_h;
     } else
         m_sub_t = nullptr;
 
-    int menu_height = 0;
-    int menu_y = 0;
+    ++nextline;
 
-    if (ct.m)
-    {
-        /* Menu height, position computation */
-        menu_height = freelines - th;
-        menu_y = SUB_WIN_Y + th;
+    if (!ct.m.empty())
+    {        
+        /* Menu subwin creating */
+        int menu_h = (int(ct.m.size()) < freelines)? int(ct.m.size()): freelines - nextline;
 
-        /* Create subwindow for menu */
-        m_sub_m = derwin(m_win, menu_height, freecols, menu_y, SUB_WIN_X);
+        m_sub_m = derwin(m_win, menu_h, freecols, nextline, SUB_WIN_X);
+        //mvwprintw(m_win, nextline, 1, "Test, test, test... TEST, TEST, TEST");
 
         /* Create items from Menu* m */
-        m_items = new ITEM *[ct.msize + 1];
-        for (size_t i = 0; i < ct.msize; ++i) {
+        m_items = new ITEM *[ct.m.size() + 1];
+
+        for (size_t i = 0; i < ct.m.size(); ++i)
+        {
             m_items[i] = new_item(ct.m[i].label.c_str(), " ");
+
+            /* If item doesn't have any function */
             if (ct.m[i].act.empty())
                 item_opts_off(m_items[i], O_SELECTABLE);
             else
                 m_items[i]->userptr = &ct.m[i];
-
         }
-        m_items[ct.msize] = nullptr;
+
+        m_items[ct.m.size()] = nullptr;
 
         /* Link menu & window */
         m_menu = new_menu(m_items);
@@ -77,7 +88,7 @@ Window::Window(const Constructor &ct)
         set_menu_sub(m_menu, m_sub_m);
 
         /* For menu scrolling */
-        set_menu_format(m_menu, menu_height, 1);
+        set_menu_format(m_menu, menu_h, 1);
 
         /* Set menu decorations */
         set_menu_mark(m_menu, " * ");
@@ -95,15 +106,17 @@ Window::Window(const Constructor &ct)
     }
 
     /* Set hooks */
-    m_hooks = ct.h;
-    m_hooks_size = ct.hsize;
+    m_hooks = &ct.h;
+
+//        box(m_sub_m, 0, 0);
+//        box(m_sub_t, 0, 0);
 
     /* Panel creation */
     m_pan = new_panel(m_win);
     set_panel_userptr(m_pan, this);
     topw = this;
 
-    this->refresh();
+    _refresh();
     update_panels();    
 }
 
@@ -111,6 +124,8 @@ Window::~Window()
 {
     /* Set the top window */
     auto pan_ptr = panel_below(topw->m_pan);
+
+
     if (pan_ptr)
         topw = reinterpret_cast<Window *>(const_cast<void *>(panel_userptr(pan_ptr)));
     else
@@ -133,9 +148,7 @@ Window::~Window()
 
     update_panels();
 
-    // Refresh previous window to show it, if it's exists
-    if (topw)
-        topw->refresh();
+    ::refresh();
 }
 
 void Window::_refresh() const
@@ -157,21 +170,20 @@ void Window::_menu_driver(int act) const
     }
 
     ::menu_driver(m_menu, act);
-    this->refresh();
+    _refresh();
 }
 
 void Window::_exechook(int key) const
 {
-    for (size_t i = 0; i < m_hooks_size; ++i)
-        if (m_hooks[i].key == key)
-            m_hooks[i].act.exec();
+    for (const auto &h : *m_hooks)
+        if (h.key == key)
+            h.act.exec();
 }
 
-// РЕЗЕРВИРУЕТ ВСЁ РОСТРАНСТВА ОКНА ПОД ТЕКСТОВОЕ ПОДОКНО, ЕСЛИ
-// ОТСУТСТВУЕТ ПОДОКНО ДЛЯ МЕНЮ
-void Window::_print(const Text &t, int x, int y, int size)
+// It reserves the entire space of the window panes to the text, if there is no menu
+void Window::_print(const vector<Text> &vt, int x, int y)
 {    
-    if (t.len == 0 || m_sub_m) return;
+    if (vt.empty() || m_sub_m) return;
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
 
@@ -186,24 +198,28 @@ void Window::_print(const Text &t, int x, int y, int size)
     }
 
     wmove(m_sub_t, 0, 0);
-    for (int i = y; i < yend; ++i)
-        for (int j = x; j < xend; ++j)
+
+
+    int h = int(vt.size());
+    int w = int(vt.at(0).len);
+
+    for (auto i = y; i < yend; ++i)
+        for (auto j = x; j < xend; ++j)
         {
-            if (i >= size || j >= size) {
+            if (i >= h || j >= w) {
                 waddch(m_sub_t, '\n');
                 break;
             }
-            waddcchar(m_sub_t, &t.text[i*size + j]);
+            waddcchar(m_sub_t, vt.at(size_t(i)).text[j]);
         }
 
-
-    refresh();
+    _refresh();
 }
 
 void Window::_print(const Text &t)
 {
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
-    int th = text_height(&t, freecols);
+    int th = text_height(t, freecols - 2*TEXT_X);
 
     if (th != cth) {
         if (m_sub_m) {
@@ -212,12 +228,8 @@ void Window::_print(const Text &t)
             unpost_menu(m_menu);
             delwin(m_sub_m);
 
-           /* Moving subwindows is allowed, but should be avoided */
-           //  wresize(m_sub_m, new_menu_height, freecols);
-           //  mvwin(m_sub_m, text_height + SUB_WIN_Y, SUB_WIN_X);
-
             m_sub_m = derwin(m_win, new_menu_height,
-                             freecols, th + SUB_WIN_Y,
+                             freecols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 
             set_menu_sub(m_menu, m_sub_m);
@@ -227,25 +239,25 @@ void Window::_print(const Text &t)
         if (m_sub_t) {
             wresize(m_sub_t, th, freecols);
         } else {
-            m_sub_t = derwin(m_win, th, freecols, SUB_WIN_Y, SUB_WIN_X);
-            //wclear(m_sub_t);
+            m_sub_t = derwin(m_win, th, freecols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
+            wclear(m_sub_t);
         }
     }
 
-    mvwaddtext(m_sub_t, 0, 0, &t);
+    mvwaddtext(m_sub_t, 0, 0, t);
     refresh();
 }
 
-int text_height(const Text *t, int freecols)
+int text_height(const Text &t, int freecols)
 {
     size_t old = 0;
     int text_height = 1, templen;
 
     // Text("")
-    if (t->len == 0) return 0;
+    if (t.len == 0) return 0;
 
-    for (size_t i = 0; i < t->len; ++i)
-        if (t->text[i].c == '\n')
+    for (size_t i = 0; i < t.len; ++i)
+        if (t.text[i].c == '\n')
         {
             templen = ( int(i) - 1 - int(old) ) + 1;
 
@@ -253,26 +265,26 @@ int text_height(const Text *t, int freecols)
             old = i + 1;
         }
 
-    templen = ( int(t->len) - 1 - int(old) ) + 1;
+    templen = ( int(t.len) - 1 - int(old) ) + 1;
 
     text_height += (templen - 1) / freecols;
 
     return text_height;
 }
 
-int waddtext(WINDOW *w, const Text *t)
+int waddtext(WINDOW *w, const Text &t)
 {
     int rc = OK;
-    for (size_t i = 0; i < t->len; ++i)
-        rc = waddcchar(w, t->text + i);
+    for (size_t i = 0; i < t.len; ++i)
+        rc = waddcchar(w, t.text[i]);
     return rc;
 }
 
-int waddcchar(WINDOW *w, const Text::cchar *t)
+int waddcchar(WINDOW *w, const cchar &t)
 {
     int rc = OK;
-    wattron(w, t->attr);
-    rc = waddch(w, chtype(t->c));
-    wattroff(w, t->attr);
+    wattron(w, t.attr);
+    rc = waddch(w, chtype(t.c));
+    wattroff(w, t.attr);
     return rc;
 }

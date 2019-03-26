@@ -3,24 +3,36 @@
 
 #include "utils.hpp"
 
-class Object {
-private:
-    int m_x = 0, m_y = 0;    
-    Text::cchar m_c;
+class Object
+{
+protected:
+    int m_x, m_y;
+    cchar m_c;
+    String m_impass;
 
-    String pathless;
 public:
-    Object() : m_x(0), m_y(0), m_c(), pathless(nullptr) {}
-    Object(int x, int y, const Text::cchar& c) : m_x(x), m_y(y), m_c(c),
+    Object(const cchar &c, const String &imp) : m_x(0), m_y(0), m_c(c), m_impass(imp) {}
 
-        pathless("#~") {}
+    Object(int x, int y, const cchar &c, const String &imp) :
+        m_x(x), m_y(y), m_c(c), m_impass(imp) {}
 
-    void move(int x, int y) { m_x += x; m_y += y; }
+    virtual ~Object() {}
 
-    const String&      getpathless() const { return pathless; }
-    int                getx() const        { return m_x; }
-    int                gety() const        { return m_y; }
-    const Text::cchar& getcchar() const    { return m_c; }
+    // definition in .cpp
+    virtual bool move(int x, int y, char path);
+
+    int          getx() const     { return m_x; }
+    int          gety() const     { return m_y; }
+    const cchar& getcchar() const { return m_c; }
+};
+
+class Dwarf : public Object {
+public:
+    Dwarf() : Object(cchar('@', A_BOLD), "~#") {}
+    Dwarf(int x, int y) : Object(x, y, cchar('@', A_BOLD), "~#") {}
+
+    bool move(int x, int y, char path)
+    { return Object::move(x, y, path); }
 };
 
 #endif // OBJECT_HPP

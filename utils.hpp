@@ -1,6 +1,7 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
+#include <vector>
 #include <string>
 #include <cstring>
 #include <ncurses.h>
@@ -23,7 +24,9 @@
 #define F_SCENARIOS ".config/mygame/scenarios/"
 #define F_GENERATIONS ".config/mygame/generations/"
 
-typedef std::string String;
+
+using std::vector;
+using String = std::string;
 
 typedef union Args {
     Args(const void *p) : ptr(p) {}
@@ -62,22 +65,23 @@ typedef struct Action {
     Args args;
 } Action;
 
-struct Text {
+struct cchar {
+    cchar() : c(0), attr(0) {}
+    cchar(char c_, attr_t a_) : c(c_), attr(a_) {}
+    char c;
+    attr_t attr;
+};
 
-    struct cchar {
-        cchar() : c(0), attr(0) {}
-        cchar(char c_, attr_t a_) : c(c_), attr(a_) {}
-        char c;
-        attr_t attr;
-    };
+struct Text {
 
     Text(): text(nullptr), len(0) {}
 
     Text (const Text &t) {
         len = t.len;
-        text = new cchar[len + 1];
-        for (size_t i = 0; i < len + 1; ++i)
+        text = new cchar[len];
+        for (size_t i = 0; i < len; ++i)
             text[i] = t.text[i];
+
     }
 
     Text (const String &s) : Text(s.data()) {}
@@ -89,27 +93,39 @@ struct Text {
 
     Text(const char *s) {
         len = strlen(s);
-        text = new cchar[len + 1] {};
-        for (size_t i = 0; i < len + 1; ++i)
+
+        text = new cchar[len] {};
+        for (size_t i = 0; i < len; ++i)
             text[i].c = s[i];
     }
 
     Text& operator=(const Text &t) {
+        if (this == &t)
+            return *this;
         delete [] text;
+
         len = t.len;
-        text = new cchar[len + 1];
-        for (size_t i = 0; i < len + 1; ++i)
+
+        text = new cchar[len];
+        for (size_t i = 0; i < len; ++i)
             text[i] = t.text[i];
+
         return *this;
     }
 
-    Text::cchar& operator[](int i) {
+    cchar& operator[](int i) {
         return this->text[i];
     }
 
-    Text::cchar& operator[](size_t i) {
+    cchar& operator[](size_t i) {
         return this->text[i];
     }
+
+    cchar* begin()
+    { return text; }
+
+    cchar* end()
+    { return text + len; }
 
     void clear() {
         len = 0;
@@ -118,7 +134,7 @@ struct Text {
     }
 
     ~Text() {
-        delete [] text;        
+        delete [] text;
     }
 
     cchar* text;

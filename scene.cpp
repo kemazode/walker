@@ -31,60 +31,72 @@ static std::unordered_map<char, attr_t> color = {
 bool Scenario::load(const String &f, Text &err)
 {
     m_file = f;
-    std::ifstream fl;
+    std::ifstream file;
 
-    fl.exceptions(std::ios::failbit);
-    char *map = nullptr;
+    file.exceptions(std::ios::failbit);
     try {
-        fl.open(m_file);
+        file.open(m_file);
 
         // Read size reading
-        fl >> m_size;
+        file >> m_width >> m_height;
 
         // Map start view coords reading
-        fl >> m_x >> m_y;
+        file >> m_x >> m_y;
 
         // Player start coords reading
         int x, y;
-        fl >> x >> y;
+        file >> x >> y;
 
         // Add player object to objects list
-        m_objects.emplace_back(x, y, Text::cchar('@', A_BOLD));
+        m_objects.push_back( Dwarf(x, y) );
         m_player = &m_objects.back();
 
         // Go to position (0, 0) on the map
-        fl.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        file.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
         // Whole map reading
-        m_real_size = m_size*m_size + 1;
-        map = new char[m_real_size];
-        for (size_t i = 0; i < m_real_size - 1; ++i) {
-            int c;
-            while ((c = fl.get()) == '\n');
-            if (c == EOF) break;
-            map[i] = char(c);
-        }
-        map[m_real_size - 1] = '\0';
+        m_map_source.reserve(m_height);
 
-    } catch (std::ios_base::failure &) {        
-        if (!fl.is_open())
+        String temp;
+        temp.reserve(m_width);
+
+        for (size_t i = 0; i < m_height; ++i) {
+            std::getline(file, temp);
+
+            if (temp.size() != m_width)
+                throw "Line " + std::to_string(i + 1) +
+                    " does not match the specified length ("
+                    + std::to_string(m_width) + ").";
+
+            m_map_source.emplace_back(temp);
+        }
+
+    } catch (std::ios_base::failure &) {
+        if (!file.is_open())
            err = "We can't open file \"" + f + "\"";
         else
            err = "Something went wrong during reading the file \"" + f + "\".";
 
+        file.close();
+        return false;
+
+    } catch (const String& fail) {
+        err = fail;
+        file.close();
         return false;
     }
 
-    fl.close();
-    m_map_source = Text(map);
+    file.close();
 
-    delete [] map;
+    char temp;
+    try {        
+        for (auto &t : m_map_source)
+            for (auto &c : t)
+                c.attr = color.at(temp = c.c);
 
-    try {
-        for (size_t i = 0; i < m_map_source.len; ++i)
-            m_map_source[i].attr = color.at(m_map_source[i].c);
-    } catch (std::out_of_range &) {       
-        err = "Sorry, but file \"" + f + "\" has incorrect symbols.";
+    } catch (std::out_of_range &) {
+        err = "Sorry, but file \"" + f + "\" has incorrect symbol \'"
+                + temp + "\'.";
         return false;
     }
 
@@ -128,8 +140,7 @@ bool Scenario::gen(size_t size, Text &err, String &f)
     }
 
     String folder = home;
-    folder += '/';
-    folder += F_GENERATIONS;
+    folder = folder + '/' + F_GENERATIONS;
 
     std::ifstream fil;
     int count = 0;
@@ -171,33 +182,31 @@ void Scenario::move_player(int x, int y)
     int npx = m_player->getx() + x;
     int npy = m_player->gety() + y;
 
-    if (npx < 0 || npx >= int(m_size) || npy < 0 || npy >= int(m_size))
-        return;
-    else if (!physic_movement_allowed(npx, npy, *m_player))
+    if (npx < 0 || npx >= int(m_width) || npy < 0 || npy >= int(m_height))
         return;
 
-    set_view(npx - m_cols/2, npy - m_lines/2);
-
-    m_player->move(x, y);
-    update_render_map();
+    if (m_player->move(x, y, map_source(npx, npy).c)) {
+        set_view(npx - m_cols/2, npy - m_lines/2);
+        update_render_map();
+    }
 }
 
 void Scenario::set_view(int x, int y)
 {
     if (x < 0) m_x = 0;
-    else if (x + m_cols > int(m_size))
+    else if (x + m_cols > int(m_width))
     {
-        if (int(m_size) > m_cols)
-            m_x = int(m_size) - m_cols;
+        if (int(m_width) > m_cols)
+            m_x = int(m_width) - m_cols;
     }
     else
         m_x = x;
 
     if (y < 0) m_y = 0;
-    else if (y + m_lines > int(m_size))
+    else if (y + m_lines > int(m_height))
     {
-        if (int(m_size) > m_lines)
-            m_y = int(m_size) - m_lines;
+        if (int(m_height) > m_lines)
+            m_y = int(m_height) - m_lines;
     }
     else
         m_y = y;
@@ -205,7 +214,7 @@ void Scenario::set_view(int x, int y)
 
 void Scenario::clear()
 {
-    m_size = m_real_size = m_x = m_y = m_lines = m_cols = 0;
+    m_x = m_y = m_lines = m_cols = m_width = m_height = 0;
     m_file.clear();
     m_map_source.clear();
     m_map_render.clear();
@@ -213,20 +222,9 @@ void Scenario::clear()
     m_player = nullptr;
 }
 
-bool Scenario::physic_movement_allowed(int x, int y, const Object& obj)
-{
-    const String &p = obj.getpathless();
-    char c = map_source(x, y).c;
-
-    if (p.find(c) != p.npos)
-        return false;
-    else
-        return true;
-}
-
 void Scenario::physic_light_render(const Object& viewer)
 {
-    const String not_visible = "#";
+    const String not_vis = "#";
     int visr = 16;
 
     int px = viewer.getx();
@@ -263,8 +261,8 @@ void Scenario::physic_light_render(const Object& viewer)
                 int npx = px + x;
                 int npy = py + y;
 
-                if (npy >= 0 && npy < int(m_size) &&
-                        npx >= 0 && npx < int(m_size)) {
+                if (npy >= 0 && npy < int(m_height) &&
+                        npx >= 0 && npx < int(m_width)) {
 
                     map_source(npx, npy).attr &= ~A_INVIS;
                     map_source(npx, npy).attr |= A_DIM;
@@ -272,7 +270,7 @@ void Scenario::physic_light_render(const Object& viewer)
                     map_render(npx, npy).attr &= ~(A_INVIS|A_DIM);
                     map_render(npx, npy).attr |= A_BOLD;
 
-                    if (not_visible.find(m_map_render.text[npy*int(m_size) + npx].c) != not_visible.npos)
+                    if (not_vis.find(map_render(npx, npy).c) != not_vis.npos)
                         break;
                 }
             }

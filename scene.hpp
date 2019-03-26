@@ -2,6 +2,7 @@
 #define SCENE_HPP
 
 #include <list>
+#include <vector>
 #include "utils.hpp"
 #include "object.hpp"
 
@@ -9,11 +10,10 @@ class Scenario {
 private:
     String m_file;
 
-    int m_x, m_y;
-    int m_lines, m_cols;
+    int m_x, m_y, m_lines, m_cols;
+    size_t m_width, m_height;
 
-    size_t m_size, m_real_size;
-    Text m_map_source, m_map_render;
+    vector<Text> m_map_source, m_map_render;
 
     std::list<Object> m_objects;
     std::list<Object>::pointer m_player;
@@ -23,22 +23,21 @@ private:
     inline bool physic_movement_allowed(int x, int y, const Object& obj);
     void physic_light_render(const Object& viewer);
 
-    inline Text::cchar& map_source(int x, int y) {
-        return m_map_source[size_t(y*int(m_size) + x)];
-    }
+    inline cchar& map_source(int x, int y)
+    { return m_map_source.at(size_t(y))[size_t(x)]; }
 
-    inline Text::cchar& map_render(int x, int y) {
-        return m_map_render[y*int(m_size) + x];
-    }
+    inline cchar& map_render(int x, int y)
+    { return m_map_render.at(size_t(y))[size_t(x)]; }
 
 public:    
+
     bool load(const String &f, Text &err);
     void clear();
 
     bool gen(const String &f, size_t size, Text &err);
     bool gen(size_t size, Text &err, String& f);
 
-    size_t size() const { return m_size; }
+    size_t size() const { return m_map_source.size(); }
     int getx() const { return m_x;  }
     int gety() const { return m_y;  }    
 
@@ -48,7 +47,7 @@ public:
     void set_display(int l, int c) { m_lines = l; m_cols = c; }
 
     void update_render_map();
-    const Text& get_render_map() const { return m_map_render; }
+    const vector<Text>& get_render_map() const { return m_map_render; }
 };
 
 #endif // SCENE_HPP

@@ -1,3 +1,19 @@
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "window.hpp"
 
 #define LINES_BORDERS 2
@@ -15,10 +31,10 @@ static int waddcchar(WINDOW *w, const cchar &t);
 
 Window *Window::topw      = nullptr;
 
-Window::Window(const Constructor &ct)
+Window::Window(const Constructor &c)
 {
     int x = 0, y = 0, lines = 0, cols = 0;
-    m_pos = ct.p;
+    m_pos = c.p;
 
     #define P(x_, y_, l_, c_) x = x_; y = y_; lines = l_; cols = c_;
 
@@ -44,13 +60,13 @@ Window::Window(const Constructor &ct)
 
     int nextline = SUB_WIN_Y;
 
-    if (!ct.t.empty())
+    if (!c.t.empty())
     {
-        int text_h = text_height(ct.t, freecols - 2*TEXT_X);
+        int text_h = text_height(c.t, freecols - 2*TEXT_X);
 
         /* Text drawing */
         m_sub_t = derwin(m_win, text_h, freecols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
-        mvwaddtext(m_sub_t, 0, 0, ct.t);
+        mvwaddtext(m_sub_t, 0, 0, c.t);
 
         nextline += text_h;
     } else
@@ -58,28 +74,28 @@ Window::Window(const Constructor &ct)
 
     ++nextline;
 
-    if (!ct.m.empty())
+    if (!c.m.empty())
     {        
         /* Menu subwin creating */
-        int menu_h = (int(ct.m.size()) < freelines)? int(ct.m.size()): freelines - nextline;
+        int menu_h = (int(c.m.size()) < freelines - nextline)? int(c.m.size()): freelines - nextline;
 
         m_sub_m = derwin(m_win, menu_h, freecols, nextline, SUB_WIN_X);
 
         /* Create items from Menu* m */
-        m_items = new ITEM *[ct.m.size() + 1];
+        m_items = new ITEM *[c.m.size() + 1];
 
-        for (size_t i = 0; i < ct.m.size(); ++i)
+        for (size_t i = 0; i < c.m.size(); ++i)
         {
-            m_items[i] = new_item(ct.m[i].label.c_str(), " ");
+            m_items[i] = new_item(c.m[i].label.c_str(), " ");
 
             /* If item doesn't have any function */
-            if (ct.m[i].act.empty())
+            if (c.m[i].act.empty())
                 item_opts_off(m_items[i], O_SELECTABLE);
             else
-                m_items[i]->userptr = &ct.m[i];
+                m_items[i]->userptr = &c.m[i];
         }
 
-        m_items[ct.m.size()] = nullptr;
+        m_items[c.m.size()] = nullptr;
 
         /* Link menu & window */
         m_menu = new_menu(m_items);
@@ -105,7 +121,7 @@ Window::Window(const Constructor &ct)
     }
 
     /* Set hooks */
-    m_hooks = &ct.h;
+    m_hooks = &c.h;
 
     /* Panel creation */
     m_pan = new_panel(m_win);
@@ -144,7 +160,7 @@ Window::~Window()
 
     update_panels();
 
-    ::refresh();
+    refresh();
 }
 
 void Window::_refresh() const
@@ -176,7 +192,7 @@ void Window::_exechook(int key) const
             h.act.exec();
 }
 
-// It reserves the entire space of the window panes to the text, if there is no menu
+/* It reserves the entire space of the window panes to the text, if there is no menu */
 void Window::_print(const vector<Text> &vt, int x, int y)
 {    
     if (vt.empty() || m_sub_m) return;
@@ -221,7 +237,7 @@ void Window::_print(const Text &t)
         if (m_sub_m) {
 
             int it_c = item_count(m_menu);
-            int menu_h = (it_c < freelines)? it_c : freelines - th - 1;
+            int menu_h = (it_c < freelines - th - 1)? it_c : freelines - th - 1;
 
             unpost_menu(m_menu);
 

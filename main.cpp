@@ -1,15 +1,30 @@
-#include <csignal>
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
+#include <fstream>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
-#include <cstring>
 #include <dirent.h>
+#include <cstring>
+#include <csignal>
 #include <cerrno>
 #include "window.hpp"
 #include "scene.hpp"
 #include "utils.hpp"
-
-//namespace bf = boost::filesystem;
 
 using W = Window;
 using Ctrs = W::Constructor;
@@ -54,13 +69,13 @@ enum
 
 // At any given time, we employ only one scenario
 static Scenario sc;
-static Text error;
 
 // Functions for working with the scenario
 static inline void sc_mvpx(Args args);
 static inline void sc_mvpy(Args args);
 static inline void sc_mvvx(Args args);
 static inline void sc_mvvy(Args args);
+
 static void sc_start(Args args);
 static void sc_gen(Args args);
 static void sc_load();
@@ -68,6 +83,9 @@ static void sc_load();
 static inline void w_push(Args args);
 static inline void w_set(Args args);
 static inline void w_menu_driver(Args args);
+
+static void init_dirs();
+void rec_mkdir(const char *dir);
 
 static vector<vector<W::Menu>> menus =
 {
@@ -191,6 +209,9 @@ int main()
     for (short i = 1; i <= 64; ++i)
         init_pair(i, (i - 1)%8, (i - 1)/8);
 
+    /* Create config directories if they did not exist */
+    init_dirs();
+
     W::push(ctrs[C_MAIN]);
 
     while(W::top())
@@ -198,6 +219,55 @@ int main()
 
     W::clear();
     endwin();
+}
+
+void init_dirs()
+{
+    const char * home = std::getenv("HOME");
+
+    if (home == nullptr) {
+        W::push(ctrs[C_OK] | "HOME environmental variable is not set.");
+        return;
+    }
+
+    String scens = home,
+           gener = home;
+
+    scens = scens + '/' + F_SCENARIOS;
+    gener = gener + '/' + F_GENERATIONS;
+
+    std::ifstream f;
+
+    for (auto &fn : { scens, gener })
+    {
+        f.open(fn);
+        if (f.is_open())
+            f.close();
+        else rec_mkdir(fn.c_str());
+    }
+
+}
+
+void rec_mkdir(const char *dir)
+{
+    char tmp[PATH_MAX];
+    char *p = nullptr;
+    size_t len;
+
+    snprintf(tmp, sizeof(tmp),"%s",dir);
+    len = strlen(tmp);
+
+    if(tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
+
+    for(p = tmp + 1; *p; p++)
+        if (*p == '/') {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
+
+    mkdir(tmp, S_IRWXU);
 }
 
 void w_set(Args args)
@@ -215,14 +285,18 @@ void sc_start(Args args)
 
     sc.clear();
 
-    if (!sc.load(scen_load, error)) {
-        W::push(ctrs[C_OK]);
-        W::print(error);
+    try {
+        sc.load(scen_load);
+        
+    } catch(const game_error &er)  {
+        W::push(ctrs[C_OK] | er.what());
         return;
     }
-
+    
     W::set(ctrs[C_GAME]);
+    
     sc.set_display(W::getfreelines(), W::getfreecols());
+    
     W::print(sc.get_render_map(), sc.getx(), sc.gety());
 }
 
@@ -253,15 +327,21 @@ void sc_mvvy(Args args)
 void sc_gen(Args args)
 {
     String fil;
-    bool success = sc.gen(size_t(args.num), error, fil);
 
-    W::pop(); // Remove C_SIZES
-    W::push(ctrs[C_OK]);
+    /* Remove C_SIZES */
+    W::pop();
 
-    if (success)
-        W::print("Map was successfully generated to " + fil);
-    else
-        W::print(error);
+    try {
+
+        /* Square-shaped map */
+        fil = Map::gen(args.num, args.num);
+
+    } catch (const game_error& er) {
+        W::push(ctrs[C_OK] | er.what());
+        return;
+    }
+    
+    W::push(ctrs[C_OK] | "Map was successfully generated to " + fil);
 }
 
 void sc_load()
@@ -269,8 +349,7 @@ void sc_load()
     const char * home = std::getenv("HOME");
 
     if (home == nullptr) {
-        W::push(ctrs[C_OK]);
-        W::print("HOME environment variable not set.");
+        W::push(ctrs[C_OK] | "HOME environmental variable is not set.");
         return;
     }
 
@@ -283,8 +362,7 @@ void sc_load()
     struct dirent *dirp;
 
     if((dp  = opendir(dir.c_str())) == nullptr) {
-        W::push(ctrs[C_OK]);
-        W::print("Error(" + String(strerror(errno)) + ") opening " + dir);
+        W::push(ctrs[C_OK] | "Error (" + String(strerror(errno)) + ") opening " + dir + ".");
         return;
     }
     while  ( (dirp = readdir(dp)) != nullptr )
@@ -294,8 +372,7 @@ void sc_load()
     closedir(dp);
 
     if (files.empty()) {
-        W::push(ctrs[C_OK]);
-        W::print("No files in \"" + dir + "\".");
+        W::push(ctrs[C_OK] | "No files in \"" + dir + "\".");
         return;
     }
 
@@ -307,8 +384,8 @@ void sc_load()
 
     auto wptr = W::push(Ctrs(W::Pos::POS_SMLL, load_menu, hooks[HOOKS_MENU], texts[TEXT_MAPS]));
 
-    // Exit when a choice window a scenario will close
-    // and may be free of memory
+    /* Exit when a choice window a scenario will close
+     * and may be free of memory */
     while(W::has(wptr))
         W::exechook(getch());
 }

@@ -1,0 +1,2 @@
+Scenarios must be located in "$HOME/.config/walker/scenarios/".
+The generated maps are in "$HOME/.config/walker/generations".

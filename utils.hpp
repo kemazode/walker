@@ -1,3 +1,19 @@
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
@@ -5,6 +21,7 @@
 #include <string>
 #include <cstring>
 #include <ncurses.h>
+#include <stdexcept>
 
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
 
@@ -21,8 +38,8 @@
 
 #define MYCOLOR COLOR_GREEN
 
-#define F_SCENARIOS ".config/mygame/scenarios/"
-#define F_GENERATIONS ".config/mygame/generations/"
+#define F_SCENARIOS ".config/walker/scenarios/"
+#define F_GENERATIONS ".config/walker/generations/"
 
 using std::vector;
 using String = std::string;
@@ -112,11 +129,14 @@ struct Text {
         return *this;
     }
 
-    cchar& operator[](int i)
-    { return this->text[i]; }
-
     cchar& operator[](size_t i)
     { return this->text[i]; }
+
+    cchar& at(size_t i)
+    {
+        if (i >= len) throw std::out_of_range("The value entered is out of range");
+        return this->text[i];
+    }
 
     cchar* begin()
     { return text; }
@@ -140,5 +160,23 @@ struct Text {
     cchar* text;
     size_t len;
 };
+
+using std::runtime_error;
+
+class game_error : public runtime_error {
+public:
+    explicit game_error(const String &err) : runtime_error(err) {}
+    explicit game_error(const char *err)   : runtime_error(err) {}
+
+    virtual ~game_error();
+};
+
+//class map_lenght_error : public game_error {
+//public:
+//    explicit map_lenght_error(const String &err) : game_error(err) {}
+//    explicit map_lenght_error(const char *err)   : game_error(err) {}
+
+//    virtual ~map_lenght_error();
+//};
 
 #endif // UTILS_HPP

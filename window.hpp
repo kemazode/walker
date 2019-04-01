@@ -1,3 +1,19 @@
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef WINDOW_HPP
 #define WINDOW_HPP
 
@@ -52,10 +68,18 @@ public:
         Constructor(Pos p_, vector<Menu> &m_, const vector<Hook> &h_, const Text &t_) :
            p(p_), m(m_), h(h_), t(t_) {}
 
+        /* Message replacing */
+        Constructor operator|(const String &mesg)
+        {
+            Constructor nc(*this);
+            nc.t = mesg;
+            return nc;
+        }
+
         const Pos p;
         vector<Menu> &m;
         const vector<Hook> &h;
-        const Text &t;
+        Text t;
     };
 
 private:
@@ -63,7 +87,7 @@ private:
     enum Pos m_pos;
     const vector<Hook> *m_hooks;
 
-    Window(const Constructor &ct);
+    Window(const Constructor &c);
     ~Window();
 
     void _refresh() const;

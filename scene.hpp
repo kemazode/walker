@@ -1,53 +1,73 @@
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
 #include <list>
-#include <vector>
+#include <memory>
+
+#include "map.hpp"
 #include "utils.hpp"
 #include "object.hpp"
+
+using uobject = std::unique_ptr<Object>;
+using std::list;
+
+typedef struct yaml_node_s yaml_node_t;
+typedef struct yaml_document_s yaml_document_t;
 
 class Scenario {
 private:
     String m_file;
 
-    int m_x, m_y, m_lines, m_cols;
-    size_t m_width, m_height;
+    int m_lines, m_cols;
 
-    vector<Text> m_map_source, m_map_render;
+    Map m_source;
+    Map m_render;
 
-    std::list<Object> m_objects;
-    std::list<Object>::pointer m_player;
-
-    static const String m_gfile;
+    list<uobject> m_objects;
+    uobject* m_player;
 
     inline bool physic_movement_allowed(int x, int y, const Object& obj);
     void physic_light_render(const Object& viewer);
 
-    inline cchar& map_source(int x, int y)
-    { return m_map_source.at(size_t(y))[size_t(x)]; }
-
-    inline cchar& map_render(int x, int y)
-    { return m_map_render.at(size_t(y))[size_t(x)]; }
+    void parse_yaml();
+    void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
+    void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
 
 public:    
 
-    bool load(const String &f, Text &err);
+    void load(const String &f);
     void clear();
 
-    bool gen(const String &f, size_t size, Text &err);
-    bool gen(size_t size, Text &err, String& f);
+    int height() const { return m_source.height(); }
+    int width() const  { return m_source.width(); }
 
-    size_t size() const { return m_map_source.size(); }
-    int getx() const { return m_x;  }
-    int gety() const { return m_y;  }    
+    int getx() const { return m_source.getx(); }
+    int gety() const { return m_source.gety(); }
 
-    void move_view(int x, int y) { set_view(m_x + x, m_y + y); }
     void move_player(int x, int y);
     void set_view(int x, int y);
+    void move_view(int x, int y) { set_view(m_source.getx() + x, m_source.gety() + y); }
     void set_display(int l, int c) { m_lines = l; m_cols = c; }
 
     void update_render_map();
-    const vector<Text>& get_render_map() const { return m_map_render; }
+
+    const vector<Text>& get_render_map() const { return m_render.getstrs(); }
 };
 
 #endif // SCENE_HPP

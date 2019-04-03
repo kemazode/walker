@@ -43,7 +43,7 @@ static String nextgen(const String& s, int count);
 void Map::push(const String &s)
 {
     if (s.empty())
-        throw game_error("Line " + to_string(m_height)
+        throw game_error("Line " + to_string(m_height + 1)
                          + " is empty.");
 
     int slen = int(s.length());
@@ -63,7 +63,7 @@ void Map::push(const String &s)
 Map::Map(const String &map, int w, int h)
 {
     if (map.empty())
-        throw game_error("Empty map");
+        throw game_error("Map is empty.");
     else if (w == 0)
         throw game_error("Map width is zero.");
     else if (h == 0)
@@ -90,7 +90,7 @@ Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
     int w = 0, h = 0;
 
     if (!node)
-        throw game_error("Empty structure.");
+        throw game_error("Empty map structure.");
     else if (node->type != YAML_MAPPING_NODE)
         throw game_error("Invalid map stucture.");
 
@@ -112,7 +112,7 @@ Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
         else if (!strcmp(key, "text"))
             map = value;
         else
-            throw game_error("Found unknown field in the map structure.");
+            throw game_error( String("Found unknown field \"") + key + "\" in the map structure.");
     }
 
     return Map(map, w, h);
@@ -126,7 +126,7 @@ void Map::decorate()
             for (auto& c : t)
                 c.attr = color.at(temp = c.c);
 
-    } catch (std::out_of_range&) {
+    } catch (std::out_of_range &) {
         throw game_error( String("Sorry, but file has incorrect symbol '") + temp + "'.");
     }
 }
@@ -151,7 +151,7 @@ void Map::gen(const String& f, int w, int h)
             fil << '\n';
         }
 
-    } catch (std::ios::failure&) {
+    } catch (std::ios::failure &) {
         if (!fil.is_open()) throw game_error("Can't create file \"" + f + "\".");
         else throw game_error("Something went wrong when writing to " + f);
     }

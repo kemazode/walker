@@ -283,8 +283,6 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
 {
     if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
 
-    bool has_map = false;
-
     for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
         auto node_key = yaml_document_get_node(doc, pair->key);
@@ -296,9 +294,5 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
        // const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         m_source = Map::create_from_yaml(node_value, doc);
-        has_map = true;
     }
-
-    if (has_map == false)
-        throw game_error("No map found.");
 }

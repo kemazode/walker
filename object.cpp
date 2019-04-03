@@ -21,8 +21,8 @@ Object* Object::create(const String& obj, int x, int y)
 {
     if (obj == "Dwarf")
         return new Dwarf(x, y);
-
-    return nullptr;
+    else
+        throw game_error("Unknown object type \"" + obj + "\".");
 }
 
 Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)

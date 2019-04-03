@@ -49,11 +49,10 @@ void Scenario::update_render_map()
 {
 
     m_render = m_source;
+    physic_light_render(*m_player);
 
     for (auto& obj : m_objects)
-        m_render.at(obj->getx(), obj->gety()) = obj->getcchar();
-
-    physic_light_render(*m_player);
+        m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
 }
 
 void Scenario::move_player(int x, int y)

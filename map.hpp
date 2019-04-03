@@ -24,7 +24,6 @@ public:
 
   void push(const String &s);
   void decorate();
-  void clear();
 
   static void gen(const String &f, int w, int h);
   static String gen(int w, int h);

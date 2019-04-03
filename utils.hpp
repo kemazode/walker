@@ -85,6 +85,30 @@ struct cchar {
     cchar() : c(0), attr(0) {}
     cchar(char c_) : c(c_), attr(0) {}
     cchar(char c_, attr_t a_) : c(c_), attr(a_) {}
+
+    /* s (symbol), c (color), a (attribute, not color) */
+    cchar& replace_sc(const cchar &cc)
+    {
+        c = cc.c;
+        attr &= ~COLOR_PAIR( PAIR_NUMBER(attr)    );
+        attr |=  COLOR_PAIR( PAIR_NUMBER(cc.attr) );
+        return *this;
+    }
+
+//    cchar& replace_ca(const cchar &cc)
+//    {
+//        attr = cc.attr;
+//        return *this;
+//    }
+
+//    cchar& replace_sa(const cchar &cc)
+//    {
+//        c = cc.c;
+//        attr = (cc.attr & ~COLOR_PAIR(PAIR_NUMBER(cc.attr))) |
+//                           COLOR_PAIR(PAIR_NUMBER(attr));
+//        return *this;
+//    }
+
     char c;
     attr_t attr;
 };

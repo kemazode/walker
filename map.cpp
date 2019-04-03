@@ -131,13 +131,6 @@ void Map::decorate()
     }
 }
 
-void Map::clear()
-{
-    m_x = m_y = 0;
-    m_width = m_height = 0;
-    m_strs.clear();
-}
-
 void Map::gen(const String& f, int w, int h)
 {
     srand(unsigned(time(nullptr)));

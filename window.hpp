@@ -29,18 +29,6 @@ using std::vector;
 #define REQ_EXEC_ITEM (MAX_MENU_COMMAND + 1)
 
 class Window {
-private:
-    PANEL  *m_pan;
-    WINDOW *m_win;
-    WINDOW *m_sub_t;
-    WINDOW *m_sub_m;
-    MENU   *m_menu;
-    ITEM   **m_items;
-
-    // Window which has top panel in the panel stack
-    static Window *topw;
-
-    int freelines, freecols;
 public:
 
     enum Pos {
@@ -84,6 +72,16 @@ public:
 
 private:
 
+    PANEL  *m_pan;
+    WINDOW *m_win;
+    WINDOW *m_sub_t;
+    WINDOW *m_sub_m;
+    MENU   *m_menu;
+    ITEM   **m_items;
+
+    // Window which has top panel in the panel stack
+    static Window *topw;
+
     enum Pos m_pos;
     const vector<Hook> *m_hooks;
 
@@ -97,12 +95,6 @@ private:
 
     void _print(const vector<Text> &vt, int x, int y);
     void _print(const Text &t);
-
-    int _getfreelines() const
-    { return freelines; }
-
-    int _getfreecols() const
-    { return freecols; }
 
 public:
     // prefix "a" - union "Args" as function argument
@@ -133,7 +125,7 @@ public:
         return false;
     }
 
-    // Static methods for TOP Window in the stack
+    // Static methods for TOP Window in th    static int getlines()
 
     static bool refresh()
     { return topw? (static_cast<void>(topw->_refresh()), true) : false; }
@@ -153,11 +145,16 @@ public:
     static void set(const Constructor &c)
     { clear(); push(c); }
 
-    static int getfreelines()
-    { return topw? topw->_getfreelines() : -1; }
+    static int getx(Pos p);
+    static int getcols(Pos p);
+    static int getcols()
+    { return topw? getcols(topw->m_pos) : -1; }
 
-    static int getfreecols()
-    { return topw? topw->_getfreecols() : -1; }
+    static int gety(Pos p);
+    static int getlines(Pos p);
+    static int getlines()
+    { return topw? getlines(topw->m_pos): -1; }
+
 };
 
 #endif // WINDOW_HPP

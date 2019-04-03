@@ -68,7 +68,7 @@ enum
 };
 
 // At any given time, we employ only one scenario
-static Scenario sc;
+static std::unique_ptr<Scenario> sc = nullptr;
 
 // Functions for working with the scenario
 static inline void sc_mvpx(Args args);
@@ -283,45 +283,42 @@ void sc_start(Args args)
 {
     const char *scen_load = reinterpret_cast<const char *>(args.ptr);
 
-    sc.clear();
-
     try {
-        sc.load(scen_load);
-        
-    } catch(const game_error &er)  {
+        sc.reset(new Scenario(scen_load,
+                              W::getlines(ctrs[C_GAME].p),
+                              W::getcols(ctrs[C_GAME].p)));
+
+    } catch(const game_error &er)  {                
         W::push(ctrs[C_OK] | er.what());
         return;
     }
     
     W::set(ctrs[C_GAME]);
-    
-    sc.set_display(W::getfreelines(), W::getfreecols());
-    
-    W::print(sc.get_render_map(), sc.getx(), sc.gety());
+    W::print(sc->get_render_map(), sc->getx(), sc->gety());
 }
 
 void sc_mvpx(Args args)
 {
-    sc.move_player(args.num, 0);
-    W::print(sc.get_render_map(), sc.getx(), sc.gety());
+    sc->move_player(args.num, 0);
+    W::print(sc->get_render_map(), sc->getx(), sc->gety());
 }
 
 void sc_mvpy(Args args)
 {
-    sc.move_player(0, args.num);
-    W::print(sc.get_render_map(), sc.getx(), sc.gety());
+    sc->move_player(0, args.num);
+    W::print(sc->get_render_map(), sc->getx(), sc->gety());
 }
 
 void sc_mvvx(Args args)
 {
-    sc.move_view(args.num, 0);
-    W::print(sc.get_render_map(), sc.getx(), sc.gety());
+    sc->move_view(args.num, 0);
+    W::print(sc->get_render_map(), sc->getx(), sc->gety());
 }
 
 void sc_mvvy(Args args)
 {
-    sc.move_view(0, args.num);
-    W::print(sc.get_render_map(), sc.getx(), sc.gety());
+    sc->move_view(0, args.num);
+    W::print(sc->get_render_map(), sc->getx(), sc->gety());
 }
 
 void sc_gen(Args args)

@@ -53,7 +53,7 @@ Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
         else if (!strcmp(key, "y"))
             y = atoi(value);
         else
-            throw game_error("Found unknown field in the object structure.");
+            throw game_error( String("Found unknown field \"") + key + "\" in the object structure.");
     }
 
     return create(type, x, y);

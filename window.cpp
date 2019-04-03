@@ -32,40 +32,29 @@ static int waddcchar(WINDOW *w, const cchar &t);
 Window *Window::topw      = nullptr;
 
 Window::Window(const Constructor &c)
-{
-    int x = 0, y = 0, lines = 0, cols = 0;
+{    
     m_pos = c.p;
 
-    #define P(x_, y_, l_, c_) x = x_; y = y_; lines = l_; cols = c_;
+    int x     = getx     (m_pos);
+    int y     = gety     (m_pos);
+    int lines = getlines (m_pos);
+    int cols  = getcols  (m_pos);
 
-    switch (m_pos) {
-    case POS_FULL: P(0, 0, LINES, COLS);
-        break;
-    case POS_AVER: P(COLS/8, LINES/8, LINES - LINES/4, COLS - COLS/4);
-        break;
-    case POS_SMLL: P(COLS/4, LINES/4, LINES/2, COLS/2);
-        break;
-    }
-
-    m_win = newwin(lines, cols, y, x);
+    m_win = newwin(lines + LINES_BORDERS, cols + COLS_BORDERS, y, x);
 
     /* Set window decorations */
     wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
     box(m_win, 0, 0);
     wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
 
-    /* Free height (lines) space */
-    freelines = lines - LINES_BORDERS;
-    freecols =  cols  - COLS_BORDERS;
-
     int nextline = SUB_WIN_Y;
 
     if (!c.t.empty())
     {
-        int text_h = text_height(c.t, freecols - 2*TEXT_X);
+        int text_h = text_height(c.t, cols - 2*TEXT_X);
 
         /* Text drawing */
-        m_sub_t = derwin(m_win, text_h, freecols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
+        m_sub_t = derwin(m_win, text_h, cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
         mvwaddtext(m_sub_t, 0, 0, c.t);
 
         nextline += text_h;
@@ -77,9 +66,9 @@ Window::Window(const Constructor &c)
     if (!c.m.empty())
     {        
         /* Menu subwin creating */
-        int menu_h = (int(c.m.size()) < freelines - nextline)? int(c.m.size()): freelines - nextline;
+        int menu_h = (int(c.m.size()) < lines- nextline)? int(c.m.size()): lines- nextline;
 
-        m_sub_m = derwin(m_win, menu_h, freecols, nextline, SUB_WIN_X);
+        m_sub_m = derwin(m_win, menu_h, cols, nextline, SUB_WIN_X);
 
         /* Create items from Menu* m */
         m_items = new ITEM *[c.m.size() + 1];
@@ -199,14 +188,17 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
 
-    int xend = x + freecols;
-    int yend = y + freelines;
+    int lines = getlines(m_pos);
+    int cols = getcols(m_pos);
 
-    if (cth != freelines) {
+    int xend = x + cols;
+    int yend = y + lines;
+
+    if (cth != lines) {
         if (m_sub_t)
-            wresize(m_sub_t, freelines, freecols);
+            wresize(m_sub_t, lines, cols);
         else
-            m_sub_t = derwin(m_win, freelines, freecols, SUB_WIN_Y, SUB_WIN_X);
+            m_sub_t = derwin(m_win, lines, cols, SUB_WIN_Y, SUB_WIN_X);
     }
 
     wmove(m_sub_t, 0, 0);
@@ -230,21 +222,24 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
 void Window::_print(const Text &t)
 {
+    int lines = getlines(m_pos);
+    int cols  = getcols(m_pos);
+
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
-    int th = text_height(t, freecols - 2*TEXT_X);
+    int th = text_height(t, cols - 2*TEXT_X);
 
     if (th != cth) {
         if (m_sub_m) {
 
             int it_c = item_count(m_menu);
-            int menu_h = (it_c < freelines - th - 1)? it_c : freelines - th - 1;
+            int menu_h = (it_c < lines - th - 1)? it_c : lines - th - 1;
 
             unpost_menu(m_menu);
 
             delwin(m_sub_m);
 
             m_sub_m = derwin(m_win, menu_h,
-                             freecols, th + SUB_WIN_Y + 1,
+                             cols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 
             set_menu_win(m_menu, m_win);
@@ -253,9 +248,9 @@ void Window::_print(const Text &t)
         }
 
         if (m_sub_t) {
-            wresize(m_sub_t, th, freecols);
+            wresize(m_sub_t, th, cols);
         } else {
-            m_sub_t = derwin(m_win, th, freecols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
+            m_sub_t = derwin(m_win, th, cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
             wclear(m_sub_t);
         }
     }
@@ -302,4 +297,48 @@ int waddcchar(WINDOW *w, const cchar &t)
     rc = waddch(w, chtype(t.c));
     wattroff(w, t.attr);
     return rc;
+}
+
+int Window::getlines(Pos p)
+{
+    switch (p)
+    {
+    case POS_FULL: return LINES - LINES_BORDERS;
+    case POS_AVER: return LINES - LINES/4 - LINES_BORDERS;
+    case POS_SMLL: return LINES/2 - LINES_BORDERS;
+    }
+    return 0;
+}
+
+int Window::getcols(Pos p)
+{
+    switch (p)
+    {
+    case POS_FULL: return COLS - COLS_BORDERS;
+    case POS_AVER: return COLS - COLS/4 - COLS_BORDERS;
+    case POS_SMLL: return COLS/2 - COLS_BORDERS;
+    }
+    return 0;
+}
+
+int Window::getx(Pos p)
+{
+    switch (p)
+    {
+    case POS_FULL: return 0;
+    case POS_AVER: return COLS/8;
+    case POS_SMLL: return COLS/4;
+    }
+    return 0;
+}
+
+int Window::gety(Pos p)
+{
+    switch (p)
+    {
+    case POS_FULL: return 0;
+    case POS_AVER: return LINES/8;
+    case POS_SMLL: return LINES/4;
+    }
+    return 0;
 }

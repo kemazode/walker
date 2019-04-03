@@ -27,14 +27,22 @@ using std::exception;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
+Scenario::Scenario(const String &f, int l, int c) : m_lines(l), m_cols(c), m_player(new Object(cchar(), ""))
+{
+    load(f);
+
+    set_view(m_player->getx() - m_cols/2,
+             m_player->gety() - m_lines/2);
+
+    m_source.decorate();
+    update_render_map();
+}
+
 void Scenario::load(const String& f)
 {
     m_file = f;
 
-    this->parse_yaml(); // throw char * exception
-
-    m_source.decorate();
-    update_render_map();
+    parse_yaml();
 }
 
 void Scenario::update_render_map()
@@ -45,56 +53,37 @@ void Scenario::update_render_map()
     for (auto& obj : m_objects)
         m_render.at(obj->getx(), obj->gety()) = obj->getcchar();
 
-    physic_light_render(*m_player->get());
+    physic_light_render(*m_player);
 }
 
 void Scenario::move_player(int x, int y)
-{
-    int npx = m_player->get()->getx() + x;
-    int npy = m_player->get()->gety() + y;
+{    
+    int px = m_player->getx();
+    int py = m_player->gety();
 
-    if (npx >= m_source.width() || npy >= m_source.height() || npx < 0 || npy < 0)
+    /* Return view to player */
+    set_view(px - m_cols / 2, py - m_lines / 2);
+
+    int npx = px + x;
+    int npy = py + y;
+
+    if (abroad(npx, npy))
         return;
 
-    if (m_player->get()->move(x, y, m_source.at(npx, npy).c)) {
-        set_view(int(npx) - m_cols / 2, int(npy) - m_lines / 2);
+    if (m_player->move(x, y, m_source.at(npx, npy).c))
+    {
+        set_view(npx - m_cols / 2, npy - m_lines / 2);
         update_render_map();
     }
 }
 
 void Scenario::set_view(int x, int y)
 {
-    int cur_x = m_source.getx();
-    int cur_y = m_source.gety();
-    int w     = m_source.width();
-    int h     = m_source.height();
+    if (!abroadx(x))
+        m_source.setx(x);
 
-    if (x < 0) cur_x = 0;
-    else if (x + m_cols > w) {
-        if (w > m_cols)
-            cur_x = w - m_cols;
-    } else
-        cur_x = x;
-
-    if (y < 0) cur_y = 0;
-    else if (y + m_lines > h) {
-        if (h > m_lines)
-            cur_y = h - m_lines;
-    } else
-        cur_y = y;
-
-    m_source.setx(cur_x);
-    m_source.sety(cur_y);
-}
-
-void Scenario::clear()
-{
-    m_lines = m_cols = 0;
-    m_file   .clear();
-    m_render .clear();
-    m_source .clear();
-    m_objects.clear();
-    m_player = nullptr;
+    if (!abroady(y))
+        m_source.sety(y);
 }
 
 void Scenario::physic_light_render(const Object& viewer)
@@ -131,7 +120,7 @@ void Scenario::physic_light_render(const Object& viewer)
                 int npx = px + x;
                 int npy = py + y;
 
-                if (npy < m_source.height() && npx < m_source.width() && npx >= 0 && npy >= 0) {
+                if (!abroad(npx, npy)) {
 
                     m_source.at(npx, npy).attr &= ~A_INVIS;
                     m_source.at(npx, npy).attr |= A_DIM;
@@ -235,11 +224,8 @@ void Scenario::parse_yaml() {
     yaml_parser_delete(&parser);
     fclose(file);
 
-    //Read the yaml document
+    /* Read YAML config */
     node = yaml_document_get_root_node(&document);
-
-    bool objects_found = false;
-    bool maps_found = false;
 
     try {
         if (not (node and node->type == YAML_MAPPING_NODE)) throw game_error(parse_error);
@@ -254,23 +240,14 @@ void Scenario::parse_yaml() {
             const char *key = reinterpret_cast<const char *>(section->data.scalar.value);
 
             if (!strcmp(key, "objects"))
-            {
                parse_yaml_objects( yaml_document_get_node(&document, pair->value), &document);
-               objects_found = true;
-            }
+
             else if (!strcmp(key, "maps"))
-            {
                parse_yaml_maps(yaml_document_get_node(&document, pair->value), &document);
-               maps_found = true;
-            }
+
             else
                 throw game_error( String("Found unknown structure \"") + key + "\".");
         }
-
-        if (!objects_found)
-            throw game_error("\"objects\" structure not found.");
-        else if (!maps_found)
-            throw game_error("\"maps\" structure not found.");
 
         yaml_document_delete(&document);
         return;
@@ -285,8 +262,6 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
 {
     if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
 
-    bool has_player = false;
-
     for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
         auto node_key = yaml_document_get_node(doc, pair->key);
@@ -300,14 +275,9 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
         Object* new_object = Object::create_from_yaml(node_value, doc);
         m_objects.emplace_back( new_object );
 
-        if (!strcmp(key, "player")) {
-            has_player = true;
-            m_player = &m_objects.back();
-        }
+        if (!strcmp(key, "player"))
+            m_player = m_objects.back();
     }
-
-    if (!has_player)
-        throw game_error("No player description found.");
 }
 
 void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)

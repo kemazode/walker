@@ -83,6 +83,7 @@ typedef struct Action {
 
 struct cchar {
     cchar() : c(0), attr(0) {}
+    cchar(char c_) : c(c_), attr(0) {}
     cchar(char c_, attr_t a_) : c(c_), attr(a_) {}
     char c;
     attr_t attr;
@@ -146,12 +147,6 @@ struct Text {
 
     bool empty() const
     { return len == 0; }
-
-    void clear() {
-        len = 0;
-        delete [] text;
-        text = nullptr;
-    }
 
     ~Text() {
         delete [] text;

@@ -24,7 +24,7 @@
 #include "utils.hpp"
 #include "object.hpp"
 
-using uobject = std::unique_ptr<Object>;
+using shobject = std::shared_ptr<Object>;
 using std::list;
 
 typedef struct yaml_node_s yaml_node_t;
@@ -39,8 +39,17 @@ private:
     Map m_source;
     Map m_render;
 
-    list<uobject> m_objects;
-    uobject* m_player;
+    list<shobject> m_objects;
+    shobject m_player;
+
+    inline bool abroad(int x, int y)
+    { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
+
+    inline bool abroadx(int x)
+    { return x >= m_source.width() || x < 0; }
+
+    inline bool abroady(int y)
+    { return y >= m_source.height() || y < 0; }
 
     inline bool physic_movement_allowed(int x, int y, const Object& obj);
     void physic_light_render(const Object& viewer);
@@ -48,11 +57,13 @@ private:
     void parse_yaml();
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
+    void update_render_map();
 
 public:    
 
+    Scenario(const String &f, int l, int c);
+
     void load(const String &f);
-    void clear();
 
     int height() const { return m_source.height(); }
     int width() const  { return m_source.width(); }
@@ -60,12 +71,11 @@ public:
     int getx() const { return m_source.getx(); }
     int gety() const { return m_source.gety(); }
 
-    void move_player(int x, int y);
-    void set_view(int x, int y);
-    void move_view(int x, int y) { set_view(m_source.getx() + x, m_source.gety() + y); }
-    void set_display(int l, int c) { m_lines = l; m_cols = c; }
+    void move_player(int x, int y);    
 
-    void update_render_map();
+    void set_view(int x, int y);
+    void move_view(int x, int y)
+    { set_view(m_source.getx() + x, m_source.gety() + y); }
 
     const vector<Text>& get_render_map() const { return m_render.getstrs(); }
 };

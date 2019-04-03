@@ -41,7 +41,6 @@ Scenario::Scenario(const String &f, int l, int c) : m_lines(l), m_cols(c), m_pla
 void Scenario::load(const String& f)
 {
     m_file = f;
-
     parse_yaml();
 }
 
@@ -78,10 +77,10 @@ void Scenario::move_player(int x, int y)
 
 void Scenario::set_view(int x, int y)
 {
-    if (!abroadx(x))
+    if (!abroadx(x) && !abroadx(x + m_cols - 1))
         m_source.setx(x);
 
-    if (!abroady(y))
+    if (!abroady(y) && !abroady(y + m_lines - 1))
         m_source.sety(y);
 }
 

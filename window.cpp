@@ -293,6 +293,10 @@ int waddtext(WINDOW *w, const Text &t)
 int waddcchar(WINDOW *w, const cchar &t)
 {
     int rc = OK;
+
+    if (t.attr & A_INVIS)
+        return rc = waddch(w, ' ');
+
     wattron(w, t.attr);
     rc = waddch(w, chtype(t.c));
     wattroff(w, t.attr);

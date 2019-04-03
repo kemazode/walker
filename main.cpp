@@ -189,7 +189,7 @@ static vector<W::Constructor> ctrs =
     Ctrs(W::Pos::POS_SMLL, menus[MENU_SIZS], hooks[HOOKS_MENU], texts[TEXT_SIZS]),
 };
 
-static void _sig_winch(const int signo)
+static void sig_winch(const int signo)
 {
     (void) signo;
     struct winsize size {};
@@ -200,7 +200,7 @@ static void _sig_winch(const int signo)
 int main()
 {    
     initscr();
-    signal(SIGWINCH, _sig_winch);
+    signal(SIGWINCH, sig_winch);
     curs_set(FALSE);
     keypad(stdscr, true);
     noecho();

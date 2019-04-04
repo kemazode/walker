@@ -23,6 +23,7 @@
 
 const String Map::m_gfile = "Generation.txt";
 
+/* Textures to generate */
 static char textures[] = { '~', '#', '\'', '`' };
 
 using std::ofstream;
@@ -30,14 +31,16 @@ using std::unordered_map;
 using std::ifstream;
 using std::to_string;
 
-static unordered_map<char, attr_t> color = {
+/* For non-static Map::decorate() */
+static unordered_map<char, attr_t> map_attrs = {
     {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | A_INVIS},
     {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | A_INVIS},
     {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | A_INVIS},
     {'`',  PAIR(COLOR_GREEN, COLOR_BLACK) | A_INVIS},
+    {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | A_INVIS}
 };
 
-// Generation (count).txt
+/* Generation (count).txt */
 static String nextgen(const String& s, int count);
 
 void Map::push(const String &s)
@@ -100,7 +103,7 @@ Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
         auto node_value = yaml_document_get_node(doc, b->value);
 
         if (node_key->type != YAML_SCALAR_NODE or node_value->type != YAML_SCALAR_NODE)
-            throw game_error("Invalid map structure");
+            throw game_error("Invalid map structure.");
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
         const char *value = reinterpret_cast<const char *>(node_value->data.scalar.value);
@@ -124,7 +127,7 @@ void Map::decorate()
     try {
         for (auto& t : m_strs)
             for (auto& c : t)
-                c.attr = color.at(temp = c.c);
+                c.attr = map_attrs.at(temp = c.c);
 
     } catch (std::out_of_range &) {
         throw game_error( String("Sorry, but file has incorrect symbol '") + temp + "'.");

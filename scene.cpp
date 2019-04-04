@@ -19,6 +19,7 @@
 #include <cstring>
 #include <sstream>
 #include <yaml.h>
+#include <cmath>
 #include <exception>
 #include "scene.hpp"
 
@@ -27,7 +28,10 @@ using std::exception;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
-Scenario::Scenario(const String &f, int l, int c) : m_lines(l), m_cols(c), m_player(new Object(cchar(), ""))
+Scenario::Scenario(const String &f, int l, int c) :
+    m_lines(l),
+    m_cols(c),
+    m_player(new Object(0, 0, 10, cchar(), "", ""))
 {
     load(f);
 
@@ -48,7 +52,7 @@ void Scenario::update_render_map()
 {
 
     m_render = m_source;
-    physic_light_render(*m_player);
+    render_fov(*m_player);
 
     for (auto& obj : m_objects)
         m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
@@ -84,55 +88,75 @@ void Scenario::set_view(int x, int y)
         m_source.sety(y);
 }
 
-void Scenario::physic_light_render(const Object& viewer)
+void Scenario::render_set_light(int x, int y)
 {
-    const String not_vis = "#";
-    int visr = 16;
+    m_render.at(x, y).attr &= ~(A_INVIS | A_DIM);
+    m_render.at(x, y).attr |= A_BOLD;
+}
+
+void Scenario::source_set_dim_light(int x, int y)
+{
+    m_source.at(x, y).attr &= ~A_INVIS;
+    m_source.at(x, y).attr |= A_DIM;
+}
+
+void Scenario::render_fov(const Object &viewer)
+{
+    using std::hypot;
+    using std::floor;
+
+    int vision_range = viewer.get_vision_range();
 
     int px = viewer.getx();
     int py = viewer.gety();
 
-    int side = 0;
-    while (side < 8) {
-        for (int i = 0; i <= visr; ++i) {
-            double k = (i == 0) ? -1 : double (visr) / double (i);
-            for (int n = 0; n <= visr; ++n) {
-                int x, y;
-                if (side < 4) {
-                    y = n;
-                    x = (std::abs(k + 1) < 0.1) ? y : int (double (y / k));
-                    if (side > 0 && side < 3)
-                        y = -y;
-                    if (side > 1 && side < 4)
-                        x = -x;
-                } else {
-                    x = n;
-                    y = (std::abs(k + 1) < 0.1) ? x : int (double (x / k));
+    for (int side = 0; side < 4; ++side)
+        for (int y = 0; y < vision_range; ++y)
+            for (int x = 0; x < vision_range; ++x)
+            {
+                double module = 0;
+                if (int(round(module = hypot(x, y))) < vision_range)
+                {
+                    double normal_x = x/module;
+                    double normal_y = y/module;
 
-                    if (side > 4 && side < 7)
-                        y = -y;
-                    if (side > 5 && side < 8)
-                        x = -x;
+                    for (int ty = 0; ty <= y; ++ty)
+                        for (int tx = 0; tx <= x; ++tx)
+                        {
+                            double temp = (tx > ty)? tx/normal_x : ty/normal_y;
+
+                            double qy = temp*normal_y,
+                                    qx = temp*normal_x;
+
+                            if (round(qy) != ty or round(qx) != tx) continue;
+
+                            bool visible = true;
+
+                            int nx = px, ny = py;
+
+                            switch (side) {
+                            case 0: nx += tx; ny += ty; break;
+                            case 1: nx -= tx; ny += ty; break;
+                            case 2: nx += tx; ny -= ty; break;
+                            case 3: nx -= tx; ny -= ty; break;
+                            }
+
+                            if (!abroad(nx, ny))
+                            {
+                                if (!viewer.visible(m_source.at(nx, ny).c))
+                                    visible = false;
+
+                                source_set_dim_light(nx, ny);
+                                render_set_light(nx, ny);
+                            }
+                            else visible = false;
+
+                            if (!visible)
+                                goto next_vector;
+                        }
                 }
-
-                int npx = px + x;
-                int npy = py + y;
-
-                if (!abroad(npx, npy)) {
-
-                    m_source.at(npx, npy).attr &= ~A_INVIS;
-                    m_source.at(npx, npy).attr |= A_DIM;
-
-                    m_render.at(npx, npy).attr &= ~(A_INVIS | A_DIM);
-                    m_render.at(npx, npy).attr |= A_BOLD;
-
-                    if (not_vis.find(m_render.at(npx, npy).c) != String::npos)
-                        break;
-                }            
+                next_vector: ;
             }
-        }
-        ++side;
-    }
 }
 
 void Scenario::parse_yaml() {

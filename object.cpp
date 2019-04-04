@@ -61,11 +61,20 @@ Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
 
 bool Object::move(int x, int y, char path)
 {
-    if (m_impass.find(path) == String::npos) {
-            m_x += x;
-            m_y += y;
+    if (m_obstacles.find(path) == String::npos)
+    {
+        m_x += x;
+        m_y += y;
         return true;
-    }
-    return false;
+    } else
+        return false;
+}
+
+bool Object::visible(char path) const
+{
+    if (m_unvisible.find(path) == String::npos)
+        return true;
+    else
+        return false;
 }
 

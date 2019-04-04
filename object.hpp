@@ -26,14 +26,19 @@ class Object
 {
 protected:
     int m_x, m_y;
+    int m_vision_range;
+
     cchar m_c;
 
-    String m_impass;
+    String m_obstacles;
+    String m_unvisible;
 public:
-    Object(const cchar &c, const String &imp) : m_x(0), m_y(0), m_c(c), m_impass(imp) {}
 
-    Object(int x, int y, const cchar &c, const String &imp) :
-        m_x(x), m_y(y), m_c(c), m_impass(imp) {}
+    Object(int x, int y, int visr, const cchar &c, const String &imp, const String &unvis) :
+        m_x(x), m_y(y), m_vision_range(visr),
+        m_c(c),
+        m_obstacles(imp),
+        m_unvisible(unvis) {}
 
     static Object* create(const String& obj, int x, int y);
     static Object* create_from_yaml(const yaml_node_t *node, yaml_document_t *doc);
@@ -41,19 +46,17 @@ public:
     virtual ~Object() {}
 
     virtual bool move(int x, int y, char path);
+    virtual bool visible(char path) const;
 
-    int          getx() const     { return m_x; }
-    int          gety() const     { return m_y; }
+    int              getx() const { return m_x; }
+    int              gety() const { return m_y; }
+    int  get_vision_range() const { return m_vision_range; }
     const cchar& getcchar() const { return m_c; }
 };
 
 class Dwarf : public Object {
-public:
-    Dwarf() : Object(cchar('@', A_BOLD), "~#") {}
-    Dwarf(int x, int y) : Object(x, y, cchar('@', A_BOLD), "~#") {}
-
-    bool move(int x, int y, char path)
-    { return Object::move(x, y, path); }
+public:    
+    Dwarf(int x, int y) : Object(x, y, 10, cchar('@', A_BOLD), "~#", "#") {}
 };
 
 #endif // OBJECT_HPP

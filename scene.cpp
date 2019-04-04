@@ -51,7 +51,7 @@ void Scenario::update_render_map()
 {
 
     m_render = m_source;
-    render_fov(*m_player);
+    render_los(*m_player);
 
     for (auto& obj : m_objects)
         m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
@@ -99,74 +99,84 @@ void Scenario::source_set_detected(int x, int y)
     m_source.at(x, y).attr |= A_DIM;
 }
 
-void Scenario::render_fov(const Object &viewer)
+void Scenario::render_los(const Object &viewer)
 {
-    using std::hypot;
-    using std::floor;
+#define LIGHT(x, y)                \
+    if (!abroad(x, y))             \
+     {                             \
+        source_set_detected(x, y); \
+        render_set_visible(x, y);  \
+        if (!viewer.visible(m_source.at(x, y).c)) goto next_line; \
+     }
+
+    using std::hypot;    
 
     int vision_range = viewer.get_vision_range();
+
 
     int px = viewer.getx();
     int py = viewer.gety();
 
-    for (int side = 0; side < 4; ++side)
-        for (int y = 0; y < vision_range; ++y)
-            for (int x = 0; x < vision_range; ++x)
+    for (int y = py - vision_range; y < py + vision_range; ++y)
+        for (int x = px - vision_range; x < px + vision_range; ++x)
+        {
+            if (round(hypot(x - px, y - py)) >= vision_range) continue;
+
+            int px = viewer.getx();
+            int py = viewer.gety();
+
+            int delta_x(x - px);
+
+            signed char const ix((delta_x > 0) - (delta_x < 0));
+            delta_x = std::abs(delta_x) << 1;
+
+            int delta_y(y - py);
+
+            signed char const iy((delta_y > 0) - (delta_y < 0));
+            delta_y = std::abs(delta_y) << 1;
+
+            LIGHT(px, py)
+
+            if (delta_x >= delta_y)
             {
-                double module = 0;
-                if (int(round(module = hypot(x, y))) < vision_range)
+                int error(delta_y - (delta_x >> 1));
+
+                while (px != x)
                 {
-                    double normal_x = x/module;
-                    double normal_y = y/module;
+                    if ((error > 0) || (!error && (ix > 0)))
+                    {
+                        error -= delta_x;
+                        py += iy;
+                    }
 
-                    for (int ty = 0; ty <= y; ++ty)
-                        for (int tx = 0; tx <= x; ++tx)
-                        {
-                            double temp;
-                            double (*round_off)(double) = nullptr;
+                    error += delta_y;
+                    px += ix;
 
-                            if (tx > ty) {
-                                round_off = floor;
-                                temp = tx/normal_x;
-                            } else {
-                                round_off = round;
-                                temp = ty/normal_y;
-                            }
-
-                            double qy = temp*normal_y,
-                                   qx = temp*normal_x;
-
-                            if (int(round_off(qy)) != ty or
-                                int(round_off(qx)) != tx) continue;
-
-                            bool visible = true;
-
-                            int nx = px, ny = py;
-
-                            switch (side) {
-                            case 0: nx += tx; ny += ty; break;
-                            case 1: nx -= tx; ny += ty; break;
-                            case 2: nx += tx; ny -= ty; break;
-                            case 3: nx -= tx; ny -= ty; break;
-                            }
-
-                            if (!abroad(nx, ny))
-                            {
-                                if (!viewer.visible(m_source.at(nx, ny).c))
-                                    visible = false;
-
-                                source_set_detected(nx, ny);
-                                render_set_visible(nx, ny);
-                            }
-                            else visible = false;
-
-                            if (!visible)
-                                goto next_vector;
-                        }
+                    LIGHT(px, py)
                 }
-                next_vector: ;
             }
+            else
+            {
+                int error(delta_x - (delta_y >> 1));
+
+                while (py != y)
+                {
+                    if ((error > 0) || (!error && (iy > 0)))
+                    {
+                        error -= delta_y;
+                        px += ix;
+                    }
+
+                    error += delta_x;
+                    py += iy;
+
+                    LIGHT(px, py)
+                }
+            }
+            next_line: ;
+    }
 }
+
 
 void Scenario::parse_yaml() {
 

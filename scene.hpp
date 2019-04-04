@@ -52,7 +52,7 @@ private:
     { return y >= m_source.height() || y < 0; }
 
 
-    void render_fov(const Object& viewer);
+    void render_los(const Object& viewer);
 
     void render_set_visible(int x, int y);
     void source_set_detected(int x, int y);

@@ -104,7 +104,7 @@ void Scenario::render_fov(const Object &viewer)
     using std::hypot;
     using std::floor;
 
-    int vision_range = 5;//viewer.get_vision_range();
+    int vision_range = viewer.get_vision_range();
 
     int px = viewer.getx();
     int py = viewer.gety();

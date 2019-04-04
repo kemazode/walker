@@ -54,8 +54,8 @@ private:
 
     void render_fov(const Object& viewer);
 
-    void render_set_light(int x, int y);
-    void source_set_dim_light(int x, int y);
+    void render_set_visible(int x, int y);
+    void source_set_detected(int x, int y);
 
     void parse_yaml();
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);

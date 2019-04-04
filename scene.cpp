@@ -24,7 +24,6 @@
 #include "scene.hpp"
 
 using std::to_string;
-using std::exception;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
@@ -88,13 +87,13 @@ void Scenario::set_view(int x, int y)
         m_source.sety(y);
 }
 
-void Scenario::render_set_light(int x, int y)
+void Scenario::render_set_visible(int x, int y)
 {
     m_render.at(x, y).attr &= ~(A_INVIS | A_DIM);
     m_render.at(x, y).attr |= A_BOLD;
 }
 
-void Scenario::source_set_dim_light(int x, int y)
+void Scenario::source_set_detected(int x, int y)
 {
     m_source.at(x, y).attr &= ~A_INVIS;
     m_source.at(x, y).attr |= A_DIM;
@@ -105,7 +104,7 @@ void Scenario::render_fov(const Object &viewer)
     using std::hypot;
     using std::floor;
 
-    int vision_range = viewer.get_vision_range();
+    int vision_range = 5;//viewer.get_vision_range();
 
     int px = viewer.getx();
     int py = viewer.gety();
@@ -123,12 +122,22 @@ void Scenario::render_fov(const Object &viewer)
                     for (int ty = 0; ty <= y; ++ty)
                         for (int tx = 0; tx <= x; ++tx)
                         {
-                            double temp = (tx > ty)? tx/normal_x : ty/normal_y;
+                            double temp;
+                            double (*round_off)(double) = nullptr;
+
+                            if (tx > ty) {
+                                round_off = floor;
+                                temp = tx/normal_x;
+                            } else {
+                                round_off = round;
+                                temp = ty/normal_y;
+                            }
 
                             double qy = temp*normal_y,
-                                    qx = temp*normal_x;
+                                   qx = temp*normal_x;
 
-                            if (round(qy) != ty or round(qx) != tx) continue;
+                            if (int(round_off(qy)) != ty or
+                                int(round_off(qx)) != tx) continue;
 
                             bool visible = true;
 
@@ -146,8 +155,8 @@ void Scenario::render_fov(const Object &viewer)
                                 if (!viewer.visible(m_source.at(nx, ny).c))
                                     visible = false;
 
-                                source_set_dim_light(nx, ny);
-                                render_set_light(nx, ny);
+                                source_set_detected(nx, ny);
+                                render_set_visible(nx, ny);
                             }
                             else visible = false;
 

@@ -22,180 +22,16 @@
 #include <cstring>
 #include <csignal>
 #include <cerrno>
-#include "window.hpp"
 #include "scene.hpp"
 #include "utils.hpp"
-
-using W = Window;
-using Ctrs = W::Constructor;
-
-enum
-{
-    MENU_NULL,
-    MENU_MAIN,
-    MENU_GAME,
-    MENU_OKAY,
-    MENU_CRTE,
-    MENU_SIZS
-};
-
-enum
-{
-    HOOKS_NULL,
-    HOOKS_MAIN,
-    HOOKS_GAME,
-    HOOKS_MENU
-};
-
-enum
-{
-    TEXT_NULL,
-    TEXT_MENU,
-    TEXT_CRTE,
-    TEXT_SIZS,
-    TEXT_MAPS
-};
-
-enum
-{
-    C_MAIN,
-    C_GAME,
-    C_GAME_MENU,
-    C_OK,
-    C_CREATE,
-    C_SIZES,
-    C_END,
-};
+#include "ui.hpp"
 
 // At any given time, we employ only one scenario
-static std::unique_ptr<Scenario> sc = nullptr;
+static std::unique_ptr<Scenario> scenario = nullptr;
 
-// Functions for working with the scenario
-static inline void sc_mvpx(Args args);
-static inline void sc_mvpy(Args args);
-static inline void sc_mvvx(Args args);
-static inline void sc_mvvy(Args args);
-
-static void sc_start(Args args);
-static void sc_gen(Args args);
-static void sc_load();
-
-static inline void w_push(Args args);
-static inline void w_set(Args args);
-static inline void w_menu_driver(Args args);
-
+static void sig_winch(const int signo);
 static void init_dirs();
-void rec_mkdir(const char *dir);
-
-static vector<vector<W::Menu>> menus =
-{
-    // MENU_NULL
-    {},
-
-    { // MENU MAIN
-      W::Menu("Start New Game", Action(sc_load)),
-      W::Menu("Create Map",     Action(w_push, Args(C_CREATE))),
-      W::Menu("Scoreboard",     Action()),
-      W::Menu("Options",        Action()),
-      W::Menu("Exit",           Action(W::clear)),
-    },
-
-    { // MENU_GAME
-      W::Menu("Continue",       Action(W::pop)),
-      W::Menu("Exit",           Action(w_set, Args(C_MAIN))),
-    },
-
-    { // MENU_OKAY
-      W::Menu("OK",       Action(W::pop)),
-    },
-
-    { // MENU_CRTE
-      W::Menu("Generate",       Action(w_push, Args(C_SIZES))),
-    },
-
-    { // MENU_SIZS
-      W::Menu("100x100", Action(Fa(sc_gen), Args(100))),
-      W::Menu("250x250", Action(Fa(sc_gen), Args(250))),
-      W::Menu("500x500", Action(Fa(sc_gen), Args(500))),
-    },
-};
-
-static vector<vector<W::Hook>> hooks =
-{
-    // HOOKS_NULL
-    {},
-
-    { // HOOKS_MAIN
-      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
-    },
-
-    { // HOOKS_GAME
-      W::Hook('Q',       Action(w_push, Args(C_GAME_MENU))),
-      W::Hook('q',       Action(w_push, Args(C_GAME_MENU))),
-
-      // Player moving
-      W::Hook(KEY_DOWN,  Action(Fa(sc_mvpy), Args(1))),
-      W::Hook(KEY_UP,    Action(Fa(sc_mvpy), Args(-1))),
-      W::Hook(KEY_LEFT,  Action(Fa(sc_mvpx), Args(-1))),
-      W::Hook(KEY_RIGHT, Action(Fa(sc_mvpx), Args(1))),
-
-      // Map moving
-      W::Hook('k', Action(Fa(sc_mvvy), Args(1))),
-      W::Hook('i', Action(Fa(sc_mvvy), Args(-1))),
-      W::Hook('j', Action(Fa(sc_mvvx), Args(-1))),
-      W::Hook('l', Action(Fa(sc_mvvx), Args(1))),
-      W::Hook('K', Action(Fa(sc_mvvy), Args(1))),
-      W::Hook('I', Action(Fa(sc_mvvy), Args(-1))),
-      W::Hook('J', Action(Fa(sc_mvvx), Args(-1))),
-      W::Hook('L', Action(Fa(sc_mvvx), Args(1))),
-    },
-
-    { // HOOKS_MENU
-      W::Hook('q',      Action(W::pop)),
-      W::Hook('Q',      Action(W::pop)),
-      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
-    },
-};
-
-static vector<Text> texts =
-{
-    // TEXT_NULL
-    Text(),
-
-    // TEXT_MENU
-    Text("Welcome!", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
-
-    // TEXT_CRTE
-    Text("Create your own map.", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
-
-    // TEXT_SIZS
-    Text("Choose map size:", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK)),
-
-    // TEXT_MAP
-    Text("Choose scenario:", A_BOLD|PAIR(MYCOLOR, COLOR_BLACK))
-};
-
-static vector<W::Constructor> ctrs =
-{
-    Ctrs(W::Pos::POS_FULL, menus[MENU_MAIN], hooks[HOOKS_MAIN], texts[TEXT_MENU]),
-    Ctrs(W::Pos::POS_AVER, menus[MENU_NULL], hooks[HOOKS_GAME], texts[TEXT_NULL]),
-    Ctrs(W::Pos::POS_SMLL, menus[MENU_GAME], hooks[HOOKS_MENU], texts[TEXT_NULL]),
-    Ctrs(W::Pos::POS_SMLL, menus[MENU_OKAY], hooks[HOOKS_MENU], texts[TEXT_NULL]),
-    Ctrs(W::Pos::POS_FULL, menus[MENU_CRTE], hooks[HOOKS_MENU], texts[TEXT_CRTE]),
-    Ctrs(W::Pos::POS_SMLL, menus[MENU_SIZS], hooks[HOOKS_MENU], texts[TEXT_SIZS]),
-};
-
-static void sig_winch(const int signo)
-{
-    (void) signo;
-    struct winsize size {};
-    ioctl(fileno(stdout), TIOCGWINSZ, reinterpret_cast<char *>(&size));
-    resizeterm(size.ws_row, size.ws_col);
-}
+static void mkdir_parents(const char *dir);
 
 int main()
 {    
@@ -221,6 +57,14 @@ int main()
     endwin();
 }
 
+void sig_winch(const int signo)
+{
+    (void) signo;
+    struct winsize size {};
+    ioctl(fileno(stdout), TIOCGWINSZ, reinterpret_cast<char *>(&size));
+    resizeterm(size.ws_row, size.ws_col);
+}
+
 void init_dirs()
 {
     const char * home = std::getenv("HOME");
@@ -243,12 +87,12 @@ void init_dirs()
         f.open(fn);
         if (f.is_open())
             f.close();
-        else rec_mkdir(fn.c_str());
+        else mkdir_parents(fn.c_str());
     }
 
 }
 
-void rec_mkdir(const char *dir)
+void mkdir_parents(const char *dir)
 {
     char tmp[PATH_MAX];
     char *p = nullptr;
@@ -270,21 +114,13 @@ void rec_mkdir(const char *dir)
     mkdir(tmp, S_IRWXU);
 }
 
-void w_set(Args args)
-{ W::set(ctrs[size_t(args.num)]); }
 
-void w_push(Args args)
-{ W::push(ctrs[size_t(args.num)]); }
-
-void w_menu_driver(Args args)
-{ W::menu_driver(args.num); }
-
-void sc_start(Args args)
+void scenario_init(Args args)
 {
-    const char *scen_load = reinterpret_cast<const char *>(args.ptr);
+    const char *scene_load = reinterpret_cast<const char *>(args.ptr);
 
     try {
-        sc.reset(new Scenario(scen_load,
+        scenario.reset(new Scenario(scene_load,
                               W::getlines(ctrs[C_GAME].p),
                               W::getcols(ctrs[C_GAME].p)));
 
@@ -294,34 +130,34 @@ void sc_start(Args args)
     }
     
     W::set(ctrs[C_GAME]);
-    W::print(sc->get_render_map(), sc->getx(), sc->gety());
+    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
-void sc_mvpx(Args args)
+void scenario_move_player_x(Args args)
 {
-    sc->move_player(args.num, 0);
-    W::print(sc->get_render_map(), sc->getx(), sc->gety());
+    scenario->move_player(args.num, 0);
+    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
-void sc_mvpy(Args args)
+void scenario_move_player_y(Args args)
 {
-    sc->move_player(0, args.num);
-    W::print(sc->get_render_map(), sc->getx(), sc->gety());
+    scenario->move_player(0, args.num);
+    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
-void sc_mvvx(Args args)
+void scenario_move_view_x(Args args)
 {
-    sc->move_view(args.num, 0);
-    W::print(sc->get_render_map(), sc->getx(), sc->gety());
+    scenario->move_view(args.num, 0);
+    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
-void sc_mvvy(Args args)
+void scenario_move_view_y(Args args)
 {
-    sc->move_view(0, args.num);
-    W::print(sc->get_render_map(), sc->getx(), sc->gety());
+    scenario->move_view(0, args.num);
+    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
-void sc_gen(Args args)
+void scenario_generate(Args args)
 {
     String fil;
 
@@ -341,7 +177,7 @@ void sc_gen(Args args)
     W::push(ctrs[C_OK] | "Map was successfully generated to " + fil);
 }
 
-void sc_load()
+void scenario_load()
 {
     const char * home = std::getenv("HOME");
 
@@ -377,7 +213,7 @@ void sc_load()
     load_menu.reserve(files.size());
 
     for (auto &f : files)
-        load_menu.emplace_back(f.substr(f.rfind('/') + 1), Action(sc_start, f.c_str()));
+        load_menu.emplace_back(f.substr(f.rfind('/') + 1), Action(scenario_init, f.c_str()));
 
     auto wptr = W::push(Ctrs(W::Pos::POS_SMLL, load_menu, hooks[HOOKS_MENU], texts[TEXT_MAPS]));
 

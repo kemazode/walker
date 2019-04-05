@@ -1,6 +1,12 @@
 #ifndef MAP_HPP
 #define MAP_HPP
 
+#include <vector>
+#include <string>
+
+using std::vector;
+using std::string;
+
 #include "utils.hpp"
 
 typedef struct yaml_node_s yaml_node_t;
@@ -13,23 +19,21 @@ class Map {
     int m_width, m_height;
     vector<Text> m_strs;
 
-    static const String m_gfile;
-
 public:
 
   Map() : m_x(0), m_y(0), m_width(0), m_height(0), m_strs() {}
-  Map(const String &map, int w, int h);
+  Map(const string &map, int w, int h);
 
   static Map create_from_yaml(const yaml_node_t *node, yaml_document_t *doc);
 
-  void push(const String &s);
-  void decorate();
+  static void generate(const string &f, int w, int h);
+  static string generate(int w, int h);
 
-  static void gen(const String &f, int w, int h);
-  static String gen(int w, int h);
-
-  cchar& at(int x, int y)
+  inline cchar& at(int x, int y)
   { return m_strs.at( vector<Text>::size_type(y) ).at( size_t(x) ); }
+
+  void push(const string &s);
+  void decorate();
 
   const vector<Text>& getstrs() const
   { return m_strs; }

@@ -17,30 +17,33 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <list>
+#include <forward_list>
+#include <string>
 #include <memory>
 
 #include "map.hpp"
-#include "utils.hpp"
-#include "object.hpp"
 
-using shobject = std::shared_ptr<Object>;
-using std::list;
+class Object;
+
+using std::shared_ptr;
+using std::forward_list;
+using std::string;
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
 class Scenario {
-private:
-    String m_file;
+
+    string m_file;
 
     int m_lines, m_cols;
 
     Map m_source;
     Map m_render;
 
-    list<shobject> m_objects;
-    shobject m_player;
+    /* Polymorphism */
+    forward_list<shared_ptr<Object>> m_objects;
+    shared_ptr<Object> m_player;
 
     inline bool abroad(int x, int y)
     { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
@@ -50,7 +53,6 @@ private:
 
     inline bool abroady(int y)
     { return y >= m_source.height() || y < 0; }
-
 
     void render_los(const Object& viewer);
 
@@ -64,19 +66,18 @@ private:
 
 public:    
 
-    Scenario(const String &f, int l, int c);
+    Scenario(const string &f, int l, int c);
 
-    void load(const String &f);
+    void load(const string &f);
 
     int height() const { return m_source.height(); }
-    int width() const  { return m_source.width(); }
-
-    int getx() const { return m_source.getx(); }
-    int gety() const { return m_source.gety(); }
+    int width()  const { return m_source.width(); }
+    int getx()   const { return m_source.getx(); }
+    int gety()   const { return m_source.gety(); }
 
     void move_player(int x, int y);    
-
     void set_view(int x, int y);
+
     void move_view(int x, int y)
     { set_view(m_source.getx() + x, m_source.gety() + y); }
 

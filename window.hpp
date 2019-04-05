@@ -31,17 +31,29 @@ using std::vector;
 class Window {
 public:
 
-    enum Pos {
-        POS_FULL,
-        POS_AVER,
-        POS_SMLL,
+    struct Location {
+      int x, y, lines, cols;
+    };
+
+    enum Position {
+        full,
+        aver,
+        small,
+        game,
+        stat,
+        log,
+    };
+
+    enum Option {
+        normal     = 0,
+        borderless = 1 << 0,
     };
 
     struct Menu {
         Menu() : label(), act() {}
-        Menu(const String &l, const Action &a) : label(l), act(a) {}
+        Menu(const string &l, const Action &a) : label(l), act(a) {}
 
-        String label;
+        string label;
         Action act;
     };
 
@@ -52,22 +64,25 @@ public:
         Action act;
     };
 
-    struct Constructor {    
-        Constructor(Pos p_, vector<Menu> &m_, const vector<Hook> &h_, const Text &t_) :
-           p(p_), m(m_), h(h_), t(t_) {}
+    struct Builder {
+        Builder(Position p_, vector<Menu> &m_,
+                    const vector<Hook> &h_, const Text &t_, const Text &l_,
+                    Option o_ = normal) :
+           p(p_), o(o_), m(m_), h(h_), t(t_), l(l_) {}
 
         /* Message replacing */
-        Constructor operator|(const String &mesg)
+        Builder operator|(const string &mesg)
         {
-            Constructor nc(*this);
+            Builder nc(*this);
             nc.t = mesg;
             return nc;
         }
 
-        const Pos p;
+        const Position p;
+        const Option o;
         vector<Menu> &m;
         const vector<Hook> &h;
-        Text t;
+        Text t, l;
     };
 
 private:
@@ -82,10 +97,10 @@ private:
     // Window which has top panel in the panel stack
     static Window *topw;
 
-    enum Pos m_pos;
+    enum Position m_pos;
     const vector<Hook> *m_hooks;
 
-    Window(const Constructor &c);
+    Window(const Builder &c);
     ~Window();
 
     void _refresh() const;
@@ -99,7 +114,7 @@ private:
 public:
     // prefix "a" - union "Args" as function argument
 
-    static Window *push(const Constructor &c)
+    static Window *push(const Builder &c)
     { return (topw = new Window(c)); }
 
     // ~Window() changes topw to below Window * (by PANEL stack)
@@ -142,19 +157,13 @@ public:
     static bool print(const vector<Text> &t, int x, int y)
     { return topw? (static_cast<void>(topw->_print(t, x, y)), true) : false; }
 
-    static void set(const Constructor &c)
+    static void set(const Builder &c)
     { clear(); push(c); }
 
-    static int getx(Pos p);
-    static int getcols(Pos p);
-    static int getcols()
-    { return topw? getcols(topw->m_pos) : -1; }
+    static Location getlocation(Position p);
 
-    static int gety(Pos p);
-    static int getlines(Pos p);
-    static int getlines()
-    { return topw? getlines(topw->m_pos): -1; }
-
+    static Location getlocation()
+    { return topw? getlocation(topw->m_pos): Location{0, 0, 0, 0}; }
 };
 
 #endif // WINDOW_HPP

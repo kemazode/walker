@@ -21,6 +21,9 @@
 #define SUB_WIN_Y 1
 #define SUB_WIN_X 1
 #define TEXT_X 1
+#define TITLE_SEPARATION " "
+#define ITEM_DESCRIPTION " "
+#define ITEM_SELECT " > "
 
 static int text_height(const Text &t, int freecols);
 static int waddtext(WINDOW *w, const Text &t);
@@ -31,30 +34,44 @@ static int waddcchar(WINDOW *w, const cchar &t);
 
 Window *Window::topw      = nullptr;
 
-Window::Window(const Constructor &c)
+Window::Window(const Builder &c)
 {    
     m_pos = c.p;
 
-    int x     = getx     (m_pos);
-    int y     = gety     (m_pos);
-    int lines = getlines (m_pos);
-    int cols  = getcols  (m_pos);
+    auto location = getlocation(m_pos);
 
-    m_win = newwin(lines + LINES_BORDERS, cols + COLS_BORDERS, y, x);
+    m_win = newwin(location.lines + LINES_BORDERS,
+                   location.cols + COLS_BORDERS,
+                   location.y,
+                   location.x);
 
     /* Set window decorations */
-    wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
-    box(m_win, 0, 0);
-    wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK)|A_DIM);
+    wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK));
+
+    if (not (c.o & borderless))
+        box(m_win, 0, 0);
+
+    /* Window title */
+    if (!c.l.empty())
+    {
+        wattron(m_win, A_REVERSE);
+        wmove(m_win, 0, location.cols/2 - int(c.l.len)/2);
+        waddstr(m_win, TITLE_SEPARATION);
+        waddtext(m_win, c.l);
+        waddstr(m_win, TITLE_SEPARATION);
+        wattroff(m_win, A_REVERSE);
+    }
+
+    wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK));
 
     int nextline = SUB_WIN_Y;
 
     if (!c.t.empty())
     {
-        int text_h = text_height(c.t, cols - 2*TEXT_X);
+        int text_h = text_height(c.t, location.cols - 2*TEXT_X);
 
         /* Text drawing */
-        m_sub_t = derwin(m_win, text_h, cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
+        m_sub_t = derwin(m_win, text_h, location.cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
         mvwaddtext(m_sub_t, 0, 0, c.t);
 
         nextline += text_h;
@@ -66,16 +83,16 @@ Window::Window(const Constructor &c)
     if (!c.m.empty())
     {        
         /* Menu subwin creating */
-        int menu_h = (int(c.m.size()) < lines- nextline)? int(c.m.size()): lines- nextline;
+        int menu_h = (int(c.m.size()) < location.lines- nextline)? int(c.m.size()): location.lines- nextline;
 
-        m_sub_m = derwin(m_win, menu_h, cols, nextline, SUB_WIN_X);
+        m_sub_m = derwin(m_win, menu_h, location.cols, nextline, SUB_WIN_X);
 
         /* Create items from Menu* m */
         m_items = new ITEM *[c.m.size() + 1];
 
         for (size_t i = 0; i < c.m.size(); ++i)
         {
-            m_items[i] = new_item(c.m[i].label.c_str(), " ");
+            m_items[i] = new_item(c.m[i].label.c_str(), ITEM_DESCRIPTION);
 
             /* If item doesn't have any function */
             if (c.m[i].act.empty())
@@ -95,7 +112,7 @@ Window::Window(const Constructor &c)
         set_menu_format(m_menu, menu_h, 1);
 
         /* Set menu decorations */
-        set_menu_mark(m_menu, " * ");
+        set_menu_mark(m_menu, ITEM_SELECT);
         set_menu_grey(m_menu, A_DIM);
         set_menu_fore(m_menu, PAIR(MYCOLOR, COLOR_BLACK)|A_BOLD);
         set_menu_back(m_menu, PAIR(COLOR_WHITE, COLOR_BLACK));
@@ -188,17 +205,16 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
 
-    int lines = getlines(m_pos);
-    int cols = getcols(m_pos);
+    auto location = getlocation(m_pos);
 
-    int xend = x + cols;
-    int yend = y + lines;
+    int xend = x + location.cols;
+    int yend = y + location.lines;
 
-    if (cth != lines) {
+    if (cth != location.lines) {
         if (m_sub_t)
-            wresize(m_sub_t, lines, cols);
+            wresize(m_sub_t, location.lines, location.cols);
         else
-            m_sub_t = derwin(m_win, lines, cols, SUB_WIN_Y, SUB_WIN_X);
+            m_sub_t = derwin(m_win, location.lines, location.cols, SUB_WIN_Y, SUB_WIN_X);
     }
 
     wmove(m_sub_t, 0, 0);
@@ -222,24 +238,23 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
 void Window::_print(const Text &t)
 {
-    int lines = getlines(m_pos);
-    int cols  = getcols(m_pos);
+    auto location = getlocation(m_pos);
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
-    int th = text_height(t, cols - 2*TEXT_X);
+    int th = text_height(t, location.cols - 2*TEXT_X);
 
     if (th != cth) {
         if (m_sub_m) {
 
             int it_c = item_count(m_menu);
-            int menu_h = (it_c < lines - th - 1)? it_c : lines - th - 1;
+            int menu_h = (it_c < location.lines - th - 1)? it_c : location.lines - th - 1;
 
             unpost_menu(m_menu);
 
             delwin(m_sub_m);
 
             m_sub_m = derwin(m_win, menu_h,
-                             cols, th + SUB_WIN_Y + 1,
+                             location.cols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 
             set_menu_win(m_menu, m_win);
@@ -248,9 +263,9 @@ void Window::_print(const Text &t)
         }
 
         if (m_sub_t) {
-            wresize(m_sub_t, th, cols);
+            wresize(m_sub_t, th, location.cols);
         } else {
-            m_sub_t = derwin(m_win, th, cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
+            m_sub_t = derwin(m_win, th, location.cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
             wclear(m_sub_t);
         }
     }
@@ -269,13 +284,13 @@ int text_height(const Text &t, int freecols)
     for (size_t i = 0; i < t.len; ++i)
         if (t.text[i].c == '\n')
         {
-            templen = ( int(i) - 1 - int(old) ) + 1;
+            templen = int(i) - int(old);
 
             text_height +=  ((templen - 1) / freecols + 1);
             old = i + 1;
         }
 
-    templen = ( int(t.len) - 1 - int(old) ) + 1;
+    templen = int(t.len) - int(old);
 
     text_height += (templen - 1) / freecols;
 
@@ -303,46 +318,15 @@ int waddcchar(WINDOW *w, const cchar &t)
     return rc;
 }
 
-int Window::getlines(Pos p)
+Window::Location Window::getlocation(Position p)
 {
-    switch (p)
-    {
-    case POS_FULL: return LINES - LINES_BORDERS;
-    case POS_AVER: return LINES - LINES/4 - LINES_BORDERS;
-    case POS_SMLL: return LINES/2 - LINES_BORDERS;
+    switch (p) {
+    case full:  return Location{0, 0, LINES - LINES_BORDERS, COLS - COLS_BORDERS};
+    case aver:  return Location{COLS/8, LINES/8, LINES - LINES/4 - LINES_BORDERS, COLS - COLS/4 - COLS_BORDERS};
+    case small: return Location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
+    case game: return getlocation(full);
+    case stat: return getlocation(aver);
+    case log:  return getlocation(log);
     }
-    return 0;
-}
-
-int Window::getcols(Pos p)
-{
-    switch (p)
-    {
-    case POS_FULL: return COLS - COLS_BORDERS;
-    case POS_AVER: return COLS - COLS/4 - COLS_BORDERS;
-    case POS_SMLL: return COLS/2 - COLS_BORDERS;
-    }
-    return 0;
-}
-
-int Window::getx(Pos p)
-{
-    switch (p)
-    {
-    case POS_FULL: return 0;
-    case POS_AVER: return COLS/8;
-    case POS_SMLL: return COLS/4;
-    }
-    return 0;
-}
-
-int Window::gety(Pos p)
-{
-    switch (p)
-    {
-    case POS_FULL: return 0;
-    case POS_AVER: return LINES/8;
-    case POS_SMLL: return LINES/4;
-    }
-    return 0;
+    return Location{0, 0, 0, 0};
 }

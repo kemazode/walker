@@ -17,6 +17,9 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
+#include <string>
+using std::string;
+
 #include "utils.hpp"
 
 typedef struct yaml_node_s yaml_node_t;
@@ -30,17 +33,17 @@ protected:
 
     cchar m_c;
 
-    String m_obstacles;
-    String m_unvisible;
+    string m_obstacles;
+    string m_unvisible;
 public:
 
-    Object(int x, int y, int visr, const cchar &c, const String &imp, const String &unvis) :
+    Object(int x, int y, int visr, const cchar &c, const string &imp, const string &unvis) :
         m_x(x), m_y(y), m_vision_range(visr),
         m_c(c),
         m_obstacles(imp),
         m_unvisible(unvis) {}
 
-    static Object* create(const String& obj, int x, int y);
+    static Object* create(const string& obj, int x, int y);
     static Object* create_from_yaml(const yaml_node_t *node, yaml_document_t *doc);
 
     virtual ~Object() {}

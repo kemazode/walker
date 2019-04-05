@@ -17,7 +17,7 @@
 #include "object.hpp"
 #include "yaml.h"
 
-Object* Object::create(const String& obj, int x, int y)
+Object* Object::create(const string& obj, int x, int y)
 {
     if (obj == "Dwarf")
         return new Dwarf(x, y);
@@ -27,7 +27,7 @@ Object* Object::create(const String& obj, int x, int y)
 
 Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
 {
-    String type;
+    string type;
     int x = 0, y = 0;
 
     if (!node)
@@ -53,7 +53,7 @@ Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
         else if (!strcmp(key, "y"))
             y = atoi(value);
         else
-            throw game_error( String("Found unknown field \"") + key + "\" in the object structure.");
+            throw game_error( string("Found unknown field \"") + key + "\" in the object structure.");
     }
 
     return create(type, x, y);
@@ -61,7 +61,7 @@ Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
 
 bool Object::move(int x, int y, char path)
 {
-    if (m_obstacles.find(path) == String::npos)
+    if (m_obstacles.find(path) == string::npos)
     {
         m_x += x;
         m_y += y;
@@ -72,7 +72,7 @@ bool Object::move(int x, int y, char path)
 
 bool Object::visible(char path) const
 {
-    if (m_unvisible.find(path) == String::npos)
+    if (m_unvisible.find(path) == string::npos)
         return true;
     else
         return false;

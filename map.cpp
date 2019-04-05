@@ -16,20 +16,24 @@
 
 #include <unordered_map>
 #include <fstream>
+
 #include "map.hpp"
 #include "utils.hpp"
 #include "perlin.hpp"
 #include "yaml.h"
 
-const String Map::m_gfile = "Generation.txt";
-
-/* Textures to generate */
-static char textures[] = { '~', '#', '\'', '`' };
+#define F_GENERATE "Generation.txt"
 
 using std::ofstream;
 using std::unordered_map;
 using std::ifstream;
 using std::to_string;
+
+/* Generation (count).txt */
+static string nextgen(const string& s, int count);
+
+/* Textures to generate */
+static char textures[] = { '~', '#', '\'', '`' };
 
 /* For non-static Map::decorate() */
 static unordered_map<char, attr_t> map_attrs = {
@@ -40,10 +44,7 @@ static unordered_map<char, attr_t> map_attrs = {
     {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | A_INVIS}
 };
 
-/* Generation (count).txt */
-static String nextgen(const String& s, int count);
-
-void Map::push(const String &s)
+void Map::push(const string &s)
 {
     if (s.empty())
         throw game_error("Line " + to_string(m_height + 1)
@@ -63,7 +64,7 @@ void Map::push(const String &s)
     m_strs.push_back(s);
 }
 
-Map::Map(const String &map, int w, int h)
+Map::Map(const string &map, int w, int h)
 {
     if (map.empty())
         throw game_error("Map is empty.");
@@ -77,11 +78,11 @@ Map::Map(const String &map, int w, int h)
     m_width = w;
     m_height = 0;
 
-    for (String::size_type pos = 0, newline = 0; h--; pos = (newline + 1) )
+    for (string::size_type pos = 0, newline = 0; h--; pos = (newline + 1) )
     {
         newline = map.find('\n', pos);
 
-        String &&temp = map.substr(pos, newline - pos);
+        string &&temp = map.substr(pos, newline - pos);
         this->push(temp);              
     }
 
@@ -89,7 +90,7 @@ Map::Map(const String &map, int w, int h)
 
 Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
 {
-    String map;
+    string map;
     int w = 0, h = 0;
 
     if (!node)
@@ -115,7 +116,7 @@ Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
         else if (!strcmp(key, "text"))
             map = value;
         else
-            throw game_error( String("Found unknown field \"") + key + "\" in the map structure.");
+            throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
     return Map(map, w, h);
@@ -130,11 +131,11 @@ void Map::decorate()
                 c.attr = map_attrs.at(temp = c.c);
 
     } catch (std::out_of_range &) {
-        throw game_error( String("Sorry, but file has incorrect symbol '") + temp + "'.");
+        throw game_error( string("Sorry, but file has incorrect symbol '") + temp + "'.");
     }
 }
 
-void Map::gen(const String& f, int w, int h)
+void Map::generate(const string& f, int w, int h)
 {
     srand(unsigned(time(nullptr)));
     perlin_set_seed(rand());
@@ -160,38 +161,38 @@ void Map::gen(const String& f, int w, int h)
     }
 }
 
-String Map::gen(int w, int h)
+string Map::generate(int w, int h)
 {
     const char* home = getenv("HOME");
 
     if (home == nullptr)
         throw game_error("HOME environment variable not set.");
 
-    String folder = home;
+    string folder = home;
     folder = folder + '/' + F_GENERATIONS;
 
     ifstream fil;
     int count = 0;
-    String filename = m_gfile;
+    string filename = F_GENERATE;
 
     do {
         fil.close();
         if (count > 0)
-            filename = nextgen(m_gfile, count);
+            filename = nextgen(F_GENERATE, count);
         fil.open(folder + filename);
         ++count;
     } while (fil.is_open());
 
     fil.close();
-    String f = folder + filename;
+    string f = folder + filename;
 
-    gen(f, w, h);
+    generate(f, w, h);
     return f;
 }
 
-String nextgen(const String& str, int count)
+string nextgen(const string& str, int count)
 {
-    String s = str;
+    string s = str;
     s.insert(s.rfind('.'), " (" + to_string(count) + ")");
     return s;
 }

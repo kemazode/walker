@@ -10,6 +10,7 @@ set(SOURCES main.cpp
             object.cpp
             perlin.cpp
             utils.cpp
+            event.cpp
             map.cpp
             )
             

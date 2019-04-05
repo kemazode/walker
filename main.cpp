@@ -48,7 +48,7 @@ int main()
     /* Create config directories if they did not exist */
     init_dirs();
 
-    W::push(ctrs[C_MAIN]);
+    W::push(builder.at(Builder::main));
 
     while(W::top())
         W::exechook(getch());
@@ -70,11 +70,11 @@ void init_dirs()
     const char * home = std::getenv("HOME");
 
     if (home == nullptr) {
-        W::push(ctrs[C_OK] | "HOME environmental variable is not set.");
+        W::push(builder.at(Builder::error) | "HOME variable is not set.");
         return;
     }
 
-    String scens = home,
+    string scens = home,
            gener = home;
 
     scens = scens + '/' + F_SCENARIOS;
@@ -118,18 +118,17 @@ void mkdir_parents(const char *dir)
 void scenario_init(Args args)
 {
     const char *scene_load = reinterpret_cast<const char *>(args.ptr);
+    auto location = W::getlocation(builder.at(Builder::game).p);
 
     try {
-        scenario.reset(new Scenario(scene_load,
-                              W::getlines(ctrs[C_GAME].p),
-                              W::getcols(ctrs[C_GAME].p)));
+        scenario.reset(new Scenario(scene_load, location.lines, location.cols));
 
     } catch(const game_error &er)  {                
-        W::push(ctrs[C_OK] | er.what());
+        W::push(builder.at(Builder::error) | er.what());
         return;
     }
     
-    W::set(ctrs[C_GAME]);
+    W::set(builder.at(Builder::game));
     W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
 }
 
@@ -159,7 +158,7 @@ void scenario_move_view_y(Args args)
 
 void scenario_generate(Args args)
 {
-    String fil;
+    string fil;
 
     /* Remove C_SIZES */
     W::pop();
@@ -167,14 +166,14 @@ void scenario_generate(Args args)
     try {
 
         /* Square-shaped map */
-        fil = Map::gen(args.num, args.num);
+        fil = Map::generate(args.num, args.num);
 
     } catch (const game_error& er) {
-        W::push(ctrs[C_OK] | er.what());
+        W::push(builder.at(Builder::error) | er.what());
         return;
     }
     
-    W::push(ctrs[C_OK] | "Map was successfully generated to " + fil);
+    W::push(builder.at(Builder::okay) | "Map was successfully generated to " + fil);
 }
 
 void scenario_load()
@@ -182,20 +181,20 @@ void scenario_load()
     const char * home = std::getenv("HOME");
 
     if (home == nullptr) {
-        W::push(ctrs[C_OK] | "HOME environmental variable is not set.");
+        W::push(builder.at(Builder::error) | "HOME variable is not set.");
         return;
     }
 
-    String dir = home;
+    string dir = home;
     dir = dir + '/' + F_SCENARIOS;
 
-    vector<String> files;
+    vector<string> files;
 
     DIR *dp;
     struct dirent *dirp;
 
     if((dp  = opendir(dir.c_str())) == nullptr) {
-        W::push(ctrs[C_OK] | "Error (" + String(strerror(errno)) + ") opening " + dir + ".");
+        W::push(builder.at(Builder::error) | string(strerror(errno)) + " \"" + dir + "\".");
         return;
     }
     while  ( (dirp = readdir(dp)) != nullptr )
@@ -205,7 +204,7 @@ void scenario_load()
     closedir(dp);
 
     if (files.empty()) {
-        W::push(ctrs[C_OK] | "No files in \"" + dir + "\".");
+        W::push(builder.at(Builder::error) | "No files in \"" + dir + "\".");
         return;
     }
 
@@ -215,7 +214,10 @@ void scenario_load()
     for (auto &f : files)
         load_menu.emplace_back(f.substr(f.rfind('/') + 1), Action(scenario_init, f.c_str()));
 
-    auto wptr = W::push(Ctrs(W::Pos::POS_SMLL, load_menu, hooks[HOOKS_MENU], texts[TEXT_MAPS]));
+    auto wptr = W::push(W::Builder(W::small, load_menu,
+                             hooks.at(Hooks::menu),
+                             "Choose scenario:",
+                             "Scenaries"));
 
     /* Exit when a choice window a scenario will close
      * and may be free of memory */

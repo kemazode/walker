@@ -20,14 +20,19 @@
 #include <sstream>
 #include <yaml.h>
 #include <cmath>
-#include <exception>
+
 #include "scene.hpp"
+#include "utils.hpp"
+#include "map.hpp"
+#include "object.hpp"
 
 using std::to_string;
+using std::string;
+using std::vector;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
-Scenario::Scenario(const String &f, int l, int c) :
+Scenario::Scenario(const string &f, int l, int c) :
     m_lines(l),
     m_cols(c),
     m_player(new Object(0, 0, 10, cchar(), "", ""))
@@ -41,7 +46,7 @@ Scenario::Scenario(const String &f, int l, int c) :
     update_render_map();
 }
 
-void Scenario::load(const String& f)
+void Scenario::load(const string& f)
 {
     m_file = f;
     parse_yaml();
@@ -101,7 +106,7 @@ void Scenario::source_set_detected(int x, int y)
 
 void Scenario::render_los(const Object &viewer)
 {
-#define LIGHT(x, y)                \
+    #define LIGHT(x, y)            \
     if (!abroad(x, y))             \
      {                             \
         source_set_detected(x, y); \
@@ -112,7 +117,6 @@ void Scenario::render_los(const Object &viewer)
     using std::hypot;    
 
     int vision_range = viewer.get_vision_range();
-
 
     int px = viewer.getx();
     int py = viewer.gety();
@@ -287,7 +291,7 @@ void Scenario::parse_yaml() {
                parse_yaml_maps(yaml_document_get_node(&document, pair->value), &document);
 
             else
-                throw game_error( String("Found unknown structure \"") + key + "\".");
+                throw game_error( string("Found unknown structure \"") + key + "\".");
         }
 
         yaml_document_delete(&document);
@@ -314,10 +318,10 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         Object* new_object = Object::create_from_yaml(node_value, doc);
-        m_objects.emplace_back( new_object );
+        m_objects.emplace_front ( new_object );
 
         if (!strcmp(key, "player"))
-            m_player = m_objects.back();
+            m_player = m_objects.front();
     }
 }
 

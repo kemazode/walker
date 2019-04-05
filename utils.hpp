@@ -24,7 +24,6 @@
 #include <stdexcept>
 
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
-
 #define PAIR(A, B) COLOR_PAIR(B*8 + (A + 1))
 
 #define COLOR_BLACK   	0
@@ -36,13 +35,13 @@
 #define COLOR_CYAN	    6
 #define COLOR_WHITE	    7
 
-#define MYCOLOR COLOR_GREEN
+#define MYCOLOR COLOR_BLUE
 
 #define F_SCENARIOS ".config/walker/scenarios/"
 #define F_GENERATIONS ".config/walker/generations/"
 
-using std::vector;
-using String = std::string;
+using std::string;
+using std::runtime_error;
 
 typedef union Args {
     Args(const void *p) : ptr(p) {}
@@ -95,20 +94,6 @@ struct cchar {
         return *this;
     }
 
-//    cchar& replace_ca(const cchar &cc)
-//    {
-//        attr = cc.attr;
-//        return *this;
-//    }
-
-//    cchar& replace_sa(const cchar &cc)
-//    {
-//        c = cc.c;
-//        attr = (cc.attr & ~COLOR_PAIR(PAIR_NUMBER(cc.attr))) |
-//                           COLOR_PAIR(PAIR_NUMBER(attr));
-//        return *this;
-//    }
-
     char c;
     attr_t attr;
 };
@@ -125,7 +110,7 @@ struct Text {
 
     }
 
-    Text (const String &s) : Text(s.data()) {}
+    Text (const string &s) : Text(s.data()) {}
 
     Text(const char *s, attr_t at) : Text(s) {
         for (size_t i = 0; i < len; ++i)
@@ -180,22 +165,12 @@ struct Text {
     size_t len;
 };
 
-using std::runtime_error;
-
 class game_error : public runtime_error {
 public:
-    explicit game_error(const String &err) : runtime_error(err) {}
+    explicit game_error(const string &err) : runtime_error(err) {}
     explicit game_error(const char *err)   : runtime_error(err) {}
 
     virtual ~game_error();
 };
-
-//class map_lenght_error : public game_error {
-//public:
-//    explicit map_lenght_error(const String &err) : game_error(err) {}
-//    explicit map_lenght_error(const char *err)   : game_error(err) {}
-
-//    virtual ~map_lenght_error();
-//};
 
 #endif // UTILS_HPP

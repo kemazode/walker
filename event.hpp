@@ -36,7 +36,6 @@ class Event {
     Conditions m_conditions;
     Buttons    m_buttons;
     Commands   m_commands;
-
     string m_message;
 
     bool parse_conditions(const Conditions &conditions);

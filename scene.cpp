@@ -175,9 +175,14 @@ void Scenario::render_los(const Object &viewer)
 
 void Scenario::turn()
 {
+    /* At first rendered map of the new state,
+     * and then later checked
+     * events and pop-up windows */
+
+    render();
+
     for (auto &e : m_events)
         e.test();
-    render();
 }
 
 void Scenario::render()
@@ -188,7 +193,7 @@ void Scenario::render()
     for (auto& obj : m_objects)
         m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
 
-    W::print(m_render.gettexts(), getx(), gety());
+    W::print(m_render.gettexts(), getx(), gety());    
 }
 
 void Scenario::parse_yaml() {

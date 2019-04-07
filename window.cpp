@@ -52,12 +52,12 @@ Window::Window(const Builder &c)
         box(m_win, 0, 0);
 
     /* Window title */
-    if (!c.l.empty())
+    if (!c.title.empty())
     {
         wattron(m_win, A_REVERSE);
-        wmove(m_win, 0, location.cols/2 - int(c.l.len)/2);
+        wmove(m_win, 0, location.cols/2 - int(c.title.len)/2);
         waddstr(m_win, TITLE_SEPARATION);
-        waddtext(m_win, c.l);
+        waddtext(m_win, c.title);
         waddstr(m_win, TITLE_SEPARATION);
         wattroff(m_win, A_REVERSE);
     }
@@ -192,7 +192,7 @@ void Window::_menu_driver(int act) const
 }
 
 void Window::_hook() const
-{
+{    
     int key = getch();
     for (const auto &h : *m_hooks)
         if (h.key == key)

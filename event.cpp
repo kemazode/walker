@@ -2,9 +2,7 @@
 
 #include "scene.hpp"
 #include "event.hpp"
-#include "window.hpp"
-
-using W = Window;
+#include "ui.hpp"
 
 Event Event::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Scenario &s)
 {
@@ -38,10 +36,12 @@ void Event::test()
             parse_commands(m_commands);
         } else {
             /* raise window */
-            //W::Position p = W::small;
-           // vector<W::Menu> menu;
+            /*
+            W::Position p = W::small;
+            vector<W::Menu> menu;
 
-            //W::Builder builder()
+            W::push(builder.at(Builder::okay) | m_message);
+           */
         }
 }
 

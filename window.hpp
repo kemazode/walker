@@ -67,9 +67,9 @@ public:
 
     struct Builder {
         Builder(Position p_, vector<Menu> &m_,
-                    const vector<Hook> &h_, const Text &t_, const Text &l_,
+                    const vector<Hook> &h_, const Text &t_, const Text &title_,
                     Option o_ = normal) :
-           p(p_), o(o_), m(m_), h(h_), t(t_), l(l_) {}
+           p(p_), o(o_), m(m_), h(h_), t(t_), title(title_) {}
 
         /* Message replacing */
         Builder operator|(const string &mesg)
@@ -83,7 +83,7 @@ public:
         const Option o;
         vector<Menu> &m;
         const vector<Hook> &h;
-        Text t, l;
+        Text t, title;
     };
 
 private:

@@ -12,6 +12,7 @@ set(SOURCES main.cpp
             utils.cpp
             event.cpp
             map.cpp
+            ui.cpp
             )
             
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

@@ -51,34 +51,52 @@ typedef union Args {
     const void* ptr;
 } Args;
 
-typedef void (*Fa)(Args);
-typedef void (*Fv)();
+using Fa = void(*)(Args);
+using Fv = void(*)();
 
-typedef struct Action {
+template<class F, class A>
+struct Action {
+    F (*f)(A);
+    A args;
 
-    Action(Fa f, const Args &a) : fa(f), args_needed(true), args(a) {}
+    Action() : f(nullptr) {}
+    Action(F (*f_)(A), A args_) : f(f_), args(args_) {}
 
-    Action(Fv f) : fv(f), args_needed(false) {}
+    bool empty()   const { return !f; }
+    F operator()() const { return f(args); }
+};
 
-    Action() : fa(nullptr), args_needed(false), args() {}
+template <class F>
+struct Action<F, void> {
+    F (*f)();
 
-    bool empty() const { return fa == nullptr && fv == nullptr; }
+    Action() : f(nullptr) {}
+    Action(F (*f_)()) : f(f_) {}
 
-    void exec() const {
-        if (args_needed)
-            fa(args);
-        else
-            fv();
-    }
+    bool empty()   const { return !f;  }
+    F operator()() const { return f(); }
+};
 
+using ActionA = Action<void, Args>;
+using ActionV = Action<void, void>;
+
+struct ActionAV {
+    ActionAV() {}
+    ActionAV(void (*fv_)()) : args(0), fv(fv_) {}
+    ActionAV(void (*fa_)(Args), Args args_) : args(1), fa(fa_, args_) {}
+
+    bool empty() const
+    { return fa.empty() and fv.empty(); }
+
+    void operator()() const
+    { args? fa() : fv(); }
+
+    bool args;
     union {
-        Fa fa;
-        Fv fv;
+        ActionA fa;
+        ActionV fv;
     };
-
-    bool args_needed;
-    Args args;
-} Action;
+};
 
 struct cchar {
     cchar() : c(0), attr(0) {}

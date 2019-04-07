@@ -183,7 +183,7 @@ void Window::_menu_driver(int act) const
     switch (act) {
     case REQ_EXEC_ITEM:
         if (temp)
-            temp->act.exec();
+            temp->act();
         return;
     }
 
@@ -191,11 +191,12 @@ void Window::_menu_driver(int act) const
     _refresh();
 }
 
-void Window::_exechook(int key) const
+void Window::_hook() const
 {
+    int key = getch();
     for (const auto &h : *m_hooks)
         if (h.key == key)
-            h.act.exec();
+            h.act();
 }
 
 /* It reserves the entire space of the window panes to the text, if there is no menu */
@@ -326,7 +327,7 @@ Window::Location Window::getlocation(Position p)
     case small: return Location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
     case game: return getlocation(full);
     case stat: return getlocation(aver);
-    case log:  return getlocation(log);
+    case log:  return getlocation(aver);
     }
     return Location{0, 0, 0, 0};
 }

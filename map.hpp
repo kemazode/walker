@@ -35,10 +35,10 @@ public:
   void push(const string &s);
   void decorate();
 
-  const vector<Text>& getstrs() const
+  const vector<Text>& gettexts() const
   { return m_strs; }
 
-  vector<Text>& getstrs()
+  vector<Text>& gettexts()
   { return m_strs; }
 
   int width() const

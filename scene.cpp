@@ -24,11 +24,14 @@
 #include "scene.hpp"
 #include "utils.hpp"
 #include "map.hpp"
+#include "event.hpp"
 #include "object.hpp"
+#include "window.hpp"
 
 using std::to_string;
 using std::string;
 using std::vector;
+using W = Window;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
@@ -43,23 +46,12 @@ Scenario::Scenario(const string &f, int l, int c) :
              m_player->gety() - m_lines/2);
 
     m_source.decorate();
-    update_render_map();
 }
 
 void Scenario::load(const string& f)
 {
     m_file = f;
     parse_yaml();
-}
-
-void Scenario::update_render_map()
-{
-
-    m_render = m_source;
-    render_los(*m_player);
-
-    for (auto& obj : m_objects)
-        m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
 }
 
 void Scenario::move_player(int x, int y)
@@ -79,7 +71,7 @@ void Scenario::move_player(int x, int y)
     if (m_player->move(x, y, m_source.at(npx, npy).c))
     {
         set_view(npx - m_cols / 2, npy - m_lines / 2);
-        update_render_map();
+        turn();
     }
 }
 
@@ -181,6 +173,23 @@ void Scenario::render_los(const Object &viewer)
     }
 }
 
+void Scenario::turn()
+{
+    for (auto &e : m_events)
+        e.test();
+    render();
+}
+
+void Scenario::render()
+{
+    m_render = m_source;
+    render_los(*m_player);
+
+    for (auto& obj : m_objects)
+        m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
+
+    W::print(m_render.gettexts(), getx(), gety());
+}
 
 void Scenario::parse_yaml() {
 
@@ -290,6 +299,9 @@ void Scenario::parse_yaml() {
             else if (!strcmp(key, "maps"))
                parse_yaml_maps(yaml_document_get_node(&document, pair->value), &document);
 
+            else if (!strcmp(key, "events"))
+               parse_yaml_events(yaml_document_get_node(&document, pair->value), &document);
+
             else
                 throw game_error( string("Found unknown structure \"") + key + "\".");
         }
@@ -340,5 +352,23 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
        // const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         m_source = Map::create_from_yaml(node_value, doc);
+    }
+}
+
+void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
+{
+    if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
+
+    for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
+    {
+        auto node_key = yaml_document_get_node(doc, pair->key);
+        auto node_value = yaml_document_get_node(doc, pair->value);
+
+        if (node_key->type != YAML_SCALAR_NODE)
+            throw game_error(parse_error);
+
+       // const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
+
+        m_events.emplace_back( Event::create_from_yaml(node_value, doc, *this) );
     }
 }

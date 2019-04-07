@@ -54,7 +54,6 @@ struct Builder {
         map_creator,
         map_sizes,
         error,
-        end,
     };
 };
 
@@ -77,30 +76,30 @@ static vector<vector<W::Menu>> menus =
     {},
 
     { // Menu::main
-      W::Menu("Start New Game", Action(scenario_load)),
-      W::Menu("Create Map",     Action(w_push, Args(Builder::map_creator))),
-      W::Menu("Scoreboard",     Action()),
-      W::Menu("Options",        Action()),
-      W::Menu("Exit",           Action(W::clear)),
+      W::Menu("Start New Game", scenario_load),
+      W::Menu("Create Map",     ActionAV(w_push, Builder::map_creator)),
+      W::Menu("Scoreboard",     ActionAV()),
+      W::Menu("Options",        ActionAV()),
+      W::Menu("Exit",           W::clear),
     },
 
     { // Menu::game
-      W::Menu("Continue",       Action(W::pop)),
-      W::Menu("Exit",           Action(w_set, Args(Builder::main))),
+      W::Menu("Continue",       W::pop),
+      W::Menu("Exit",           ActionAV(w_set, Builder::main)),
     },
 
     { // Menu::okay
-      W::Menu("OK",             Action(W::pop)),
+      W::Menu("OK",            W::pop),
     },
 
     { // Menu::create
-      W::Menu("Generate",       Action(w_push, Args(Builder::map_sizes))),
+      W::Menu("Generate",      ActionAV(w_push, Builder::map_sizes)),
     },
 
     { // Menu::map_sizes
-      W::Menu("100x100", Action(scenario_generate, Args(100))),
-      W::Menu("250x250", Action(scenario_generate, Args(250))),
-      W::Menu("500x500", Action(scenario_generate, Args(500))),
+      W::Menu("100x100", ActionAV(scenario_generate, 100)),
+      W::Menu("250x250", ActionAV(scenario_generate, 250)),
+      W::Menu("500x500", ActionAV(scenario_generate, 500)),
     },
 };
 
@@ -110,38 +109,38 @@ static vector<vector<W::Hook>> hooks =
     {},
 
     { // Hooks::main
-      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
+      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
+      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
+      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM))
     },
 
     { // Hooks::game
-      W::Hook('Q',       Action(w_push, Args(Builder::game_menu))),
-      W::Hook('q',       Action(w_push, Args(Builder::game_menu))),
+      W::Hook('Q',       ActionAV(w_push, Builder::game_menu)),
+      W::Hook('q',       ActionAV(w_push, Builder::game_menu)),
 
       // Player moving
-      W::Hook(KEY_DOWN,  Action(scenario_move_player_y, Args(1))),
-      W::Hook(KEY_UP,    Action(scenario_move_player_y, Args(-1))),
-      W::Hook(KEY_LEFT,  Action(scenario_move_player_x, Args(-1))),
-      W::Hook(KEY_RIGHT, Action(scenario_move_player_x, Args(1))),
+      W::Hook(KEY_DOWN,  ActionAV(scenario_move_player_y,  1)),
+      W::Hook(KEY_UP,    ActionAV(scenario_move_player_y, -1)),
+      W::Hook(KEY_LEFT,  ActionAV(scenario_move_player_x, -1)),
+      W::Hook(KEY_RIGHT, ActionAV(scenario_move_player_x,  1)),
 
       // Map moving
-      W::Hook('k', Action(scenario_move_view_y, Args(1))),
-      W::Hook('i', Action(scenario_move_view_y, Args(-1))),
-      W::Hook('j', Action(scenario_move_view_x, Args(-1))),
-      W::Hook('l', Action(scenario_move_view_x, Args(1))),
-      W::Hook('K', Action(scenario_move_view_y, Args(1))),
-      W::Hook('I', Action(scenario_move_view_y, Args(-1))),
-      W::Hook('J', Action(scenario_move_view_x, Args(-1))),
-      W::Hook('L', Action(scenario_move_view_x, Args(1))),
+      W::Hook('k', ActionAV(scenario_move_view_y,  1)),
+      W::Hook('i', ActionAV(scenario_move_view_y, -1)),
+      W::Hook('j', ActionAV(scenario_move_view_x, -1)),
+      W::Hook('l', ActionAV(scenario_move_view_x,  1)),
+      W::Hook('K', ActionAV(scenario_move_view_y,  1)),
+      W::Hook('I', ActionAV(scenario_move_view_y, -1)),
+      W::Hook('J', ActionAV(scenario_move_view_x, -1)),
+      W::Hook('L', ActionAV(scenario_move_view_x,  1)),
     },
 
     { // Hooks::menu
-      W::Hook('q',      Action(W::pop)),
-      W::Hook('Q',      Action(W::pop)),
-      W::Hook(KEY_DOWN, Action(w_menu_driver, Args(REQ_DOWN_ITEM))),
-      W::Hook(KEY_UP,   Action(w_menu_driver, Args(REQ_UP_ITEM))),
-      W::Hook('\n',     Action(w_menu_driver, Args(REQ_EXEC_ITEM)))
+      W::Hook('q',      W::pop),
+      W::Hook('Q',      W::pop),
+      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
+      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
+      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM))
     },
 };
 

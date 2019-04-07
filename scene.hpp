@@ -22,12 +22,15 @@
 #include <memory>
 
 #include "map.hpp"
+#include "event.hpp"
 
 class Object;
+class Event;
 
 using std::shared_ptr;
 using std::forward_list;
 using std::string;
+
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
@@ -40,6 +43,9 @@ class Scenario {
 
     Map m_source;
     Map m_render;
+
+    variable_map m_variables;
+    vector<Event> m_events;
 
     /* Polymorphism */
     forward_list<shared_ptr<Object>> m_objects;
@@ -62,7 +68,7 @@ class Scenario {
     void parse_yaml();
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
-    void update_render_map();
+    void parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc);
 
 public:    
 
@@ -75,13 +81,13 @@ public:
     int getx()   const { return m_source.getx(); }
     int gety()   const { return m_source.gety(); }
 
-    void move_player(int x, int y);    
     void set_view(int x, int y);
-
+    void move_player(int x, int y);    
     void move_view(int x, int y)
     { set_view(m_source.getx() + x, m_source.gety() + y); }
 
-    const vector<Text>& get_render_map() const { return m_render.getstrs(); }
+    void turn();
+    void render();
 };
 
 #endif // SCENE_HPP

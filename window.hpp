@@ -51,17 +51,17 @@ public:
 
     struct Menu {
         Menu() : label(), act() {}
-        Menu(const string &l, const Action &a) : label(l), act(a) {}
+        Menu(const string &l, const ActionAV &a) : label(l), act(a) {}
 
         string label;
-        Action act;
+        ActionAV act;
     };
 
     struct Hook {
         Hook() : key(0), act() {}
-        Hook(int k, const Action &a) : key(k), act(a) {}
+        Hook(int k, const ActionAV &a) : key(k), act(a) {}
         int key;
-        Action act;
+        ActionAV act;
     };
 
     struct Builder {
@@ -104,7 +104,7 @@ private:
     ~Window();
 
     void _refresh() const;
-    void _exechook(int key) const;
+    void _hook() const;
 
     void _menu_driver(int act) const;
 
@@ -140,13 +140,13 @@ public:
         return false;
     }
 
-    // Static methods for TOP Window in th    static int getlines()
+    // Static methods for TOP Window in th    static int getButtons()
 
     static bool refresh()
     { return topw? (static_cast<void>(topw->_refresh()), true) : false; }
 
-    static bool exechook(int key)
-    { return topw? (static_cast<void>(topw->_exechook(key)), true) : false; }
+    static bool hook()
+    { return topw? (static_cast<void>(topw->_hook()), true) : false; }
 
     static bool menu_driver(int act)
     { return topw? (static_cast<void>(topw->_menu_driver(act)), true) : false; }
@@ -164,6 +164,7 @@ public:
 
     static Location getlocation()
     { return topw? getlocation(topw->m_pos): Location{0, 0, 0, 0}; }
+
 };
 
 #endif // WINDOW_HPP

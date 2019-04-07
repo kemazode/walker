@@ -51,7 +51,7 @@ int main()
     W::push(builder.at(Builder::main));
 
     while(W::top())
-        W::exechook(getch());
+        W::hook();
 
     W::clear();
     endwin();
@@ -129,32 +129,20 @@ void scenario_init(Args args)
     }
     
     W::set(builder.at(Builder::game));
-    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
+    scenario->render();
 }
 
 void scenario_move_player_x(Args args)
-{
-    scenario->move_player(args.num, 0);
-    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
-}
+{ scenario->move_player(args.num, 0); }
 
 void scenario_move_player_y(Args args)
-{
-    scenario->move_player(0, args.num);
-    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
-}
+{ scenario->move_player(0, args.num); }
 
 void scenario_move_view_x(Args args)
-{
-    scenario->move_view(args.num, 0);
-    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
-}
+{ scenario->move_view(args.num, 0); }
 
 void scenario_move_view_y(Args args)
-{
-    scenario->move_view(0, args.num);
-    W::print(scenario->get_render_map(), scenario->getx(), scenario->gety());
-}
+{ scenario->move_view(0, args.num); }
 
 void scenario_generate(Args args)
 {
@@ -212,7 +200,7 @@ void scenario_load()
     load_menu.reserve(files.size());
 
     for (auto &f : files)
-        load_menu.emplace_back(f.substr(f.rfind('/') + 1), Action(scenario_init, f.c_str()));
+        load_menu.emplace_back(f.substr(f.rfind('/') + 1), ActionAV(scenario_init, f.c_str()));
 
     auto wptr = W::push(W::Builder(W::small, load_menu,
                              hooks.at(Hooks::menu),
@@ -222,5 +210,5 @@ void scenario_load()
     /* Exit when a choice window a scenario will close
      * and may be free of memory */
     while(W::has(wptr))
-        W::exechook(getch());
+        W::hook();
 }

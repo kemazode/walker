@@ -58,17 +58,16 @@ struct Builder {
 };
 
 // Functions for working with the scenario
-static inline void scenario_move_player_x(Args args);
-static inline void scenario_move_player_y(Args args);
-static inline void scenario_move_view_x(Args args);
-static inline void scenario_move_view_y(Args args);
-static        void scenario_init(Args args);
-static        void scenario_generate(Args args);
+static inline void scenario_move_player_x(Arg);
+static inline void scenario_move_player_y(Arg);
+static inline void scenario_move_view_x  (Arg);
+static inline void scenario_move_view_y  (Arg);
+static        void scenario_generate     (Arg);
 static        void scenario_load();
 
-static inline void w_push(Args args);
-static inline void w_set(Args args);
-static inline void w_menu_driver(Args args);
+static inline void w_push       (Arg);
+static inline void w_set        (Arg);
+static inline void w_menu_driver(Arg);
 
 static vector<vector<W::Menu>> menus =
 {
@@ -78,8 +77,8 @@ static vector<vector<W::Menu>> menus =
     { // Menu::main
       W::Menu("Start New Game", scenario_load),
       W::Menu("Create Map",     ActionAV(w_push, Builder::map_creator)),
-      W::Menu("Scoreboard",     ActionAV()),
-      W::Menu("Options",        ActionAV()),
+      W::Menu("Scoreboard"),
+      W::Menu("Options"),
       W::Menu("Exit",           W::clear),
     },
 
@@ -155,13 +154,13 @@ static vector<W::Builder> builder =
     W::Builder(W::small, menus[Menu::okay],        hooks[Hooks::menu], Text(),                 "Error"),
 };
 
-void w_set(Args args)
-{ W::set(builder[size_t(args.num)]); }
+void w_set(Arg arg)
+{ W::set(builder[size_t(arg)]); }
 
-void w_push(Args args)
-{ W::push(builder[size_t(args.num)]); }
+void w_push(Arg arg)
+{ W::push(builder[size_t(arg)]); }
 
-void w_menu_driver(Args args)
-{ W::menu_driver(args.num); }
+void w_menu_driver(Arg arg)
+{ W::menu_driver(arg); }
 
 #endif // UI_HPP

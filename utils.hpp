@@ -22,6 +22,7 @@
 #include <cstring>
 #include <ncurses.h>
 #include <stdexcept>
+#include <cstdint>
 
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define PAIR(A, B) COLOR_PAIR(B*8 + (A + 1))
@@ -43,15 +44,9 @@
 using std::string;
 using std::runtime_error;
 
-typedef union Args {
-    Args(const void *p) : ptr(p) {}
-    Args(int n)   : num(n) {}
-    Args() : ptr(nullptr) {}
-    int num;
-    const void* ptr;
-} Args;
+using Arg = intptr_t;
 
-using Fa = void(*)(Args);
+using Fa = void(*)(Arg);
 using Fv = void(*)();
 
 template<class F, class A>
@@ -77,21 +72,21 @@ struct Action<F, void> {
     F operator()() const { return f(); }
 };
 
-using ActionA = Action<void, Args>;
+using ActionA = Action<void, Arg>;
 using ActionV = Action<void, void>;
 
 struct ActionAV {
-    ActionAV() {}
-    ActionAV(void (*fv_)()) : args(0), fv(fv_) {}
-    ActionAV(void (*fa_)(Args), Args args_) : args(1), fa(fa_, args_) {}
+    ActionAV() : fa() {}
+    ActionAV(void (*fv_)()) : arg(0), fv(fv_) {}
+    ActionAV(void (*fa_)(Arg), Arg arg_) : arg(1), fa(fa_, arg_) {}
 
     bool empty() const
     { return fa.empty() and fv.empty(); }
 
     void operator()() const
-    { args? fa() : fv(); }
+    { arg? fa() : fv(); }
 
-    bool args;
+    bool arg;
     union {
         ActionA fa;
         ActionV fv;

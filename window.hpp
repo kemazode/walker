@@ -51,6 +51,7 @@ public:
 
     struct Menu {
         Menu() : label(), act() {}
+        Menu(const string &l) : label(l), act() {}
         Menu(const string &l, const ActionAV &a) : label(l), act(a) {}
 
         string label;

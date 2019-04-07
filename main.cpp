@@ -115,9 +115,10 @@ void mkdir_parents(const char *dir)
 }
 
 
-void scenario_init(Args args)
+void scenario_init(Arg arg)
 {
-    const char *scene_load = reinterpret_cast<const char *>(args.ptr);
+    const string &scene_load = *reinterpret_cast<const string *>(arg);
+
     auto location = W::getlocation(builder.at(Builder::game).p);
 
     try {
@@ -132,19 +133,19 @@ void scenario_init(Args args)
     scenario->render();
 }
 
-void scenario_move_player_x(Args args)
-{ scenario->move_player(args.num, 0); }
+void scenario_move_player_x(Arg arg)
+{ scenario->move_player(int(arg), 0); }
 
-void scenario_move_player_y(Args args)
-{ scenario->move_player(0, args.num); }
+void scenario_move_player_y(Arg arg)
+{ scenario->move_player(0, int(arg)); }
 
-void scenario_move_view_x(Args args)
-{ scenario->move_view(args.num, 0); }
+void scenario_move_view_x(Arg arg)
+{ scenario->move_view(int(arg), 0); }
 
-void scenario_move_view_y(Args args)
-{ scenario->move_view(0, args.num); }
+void scenario_move_view_y(Arg arg)
+{ scenario->move_view(0, int(arg)); }
 
-void scenario_generate(Args args)
+void scenario_generate(Arg arg)
 {
     string fil;
 
@@ -154,7 +155,7 @@ void scenario_generate(Args args)
     try {
 
         /* Square-shaped map */
-        fil = Map::generate(args.num, args.num);
+        fil = Map::generate(int(arg), int(arg));
 
     } catch (const game_error& er) {
         W::push(builder.at(Builder::error) | er.what());
@@ -199,8 +200,8 @@ void scenario_load()
     vector<W::Menu> load_menu;
     load_menu.reserve(files.size());
 
-    for (auto &f : files)
-        load_menu.emplace_back(f.substr(f.rfind('/') + 1), ActionAV(scenario_init, f.c_str()));
+    for (const auto &f : files)
+        load_menu.emplace_back(f.substr(f.rfind('/') + 1), ActionAV(scenario_init, Arg(&f)));
 
     auto wptr = W::push(W::Builder(W::small, load_menu,
                              hooks.at(Hooks::menu),

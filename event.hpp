@@ -78,7 +78,11 @@ public:
           m_scenario(scene),
           m_title(title),
           m_position(pos)
-    { for (auto &b : m_buttons) b.event = this; }
+    {
+        for (auto &b : m_buttons)
+            b.event = this;
+    }
+
 
     static Event create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
     static void push_button(Arg button_ptr);

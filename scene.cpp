@@ -201,9 +201,9 @@ void Scenario::render()
 
 shared_ptr<Object> Scenario::get_object(const string& id)
 {
-    for (auto &o : m_objects)
-        if (o->getid() == id)
-            return o;
+    for (auto &object : m_objects)
+        if (object->getid() == id)
+            return object;
     return nullptr;
 }
 
@@ -388,43 +388,72 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
     }
 }
 
+void Scenario::parse_call(const string &call, string &id, string &method, string &args)
+{
+        auto pointer  = call.find('.');
+        auto cbracket = call.rfind(')');
+        auto obracket = call.find('(');
+
+        /* function(2, 4, '.') - hasn't object, but point exists */
+        if (pointer > obracket or pointer == string::npos) {
+            pointer = 0;
+            id = "";
+        } else
+            id = call.substr(0, pointer++);
+
+        method = call.substr(pointer, obracket - pointer);
+
+        if (obracket == string::npos or cbracket == string::npos)
+            args = "";
+        else
+            args = call.substr(obracket + 1, cbracket - (obracket + 1));
+
+}
 bool Scenario::parse_condition(const string& cond)
 {
-//    auto pointer = cond.find('.');
-//    auto cbracket = cond.find(')');
-//    auto obracket = cond.find('(');
+    string id, method, args;
+    parse_call(cond, id, method, args);
 
-//    string id = cond.substr(0, pointer);
-//    string method = cond.substr(pointer + 1, obracket - (pointer + 1));
-//    string args = cond.substr(obracket + 1, cbracket - (obracket + 1));
+    /* Method implementations */
+    if (id.empty()) {
 
-    istringstream in(cond);
-    string id, method;
+    } else {
+        auto object = get_object(id);
 
-    getline(in, id, '.');
-    getline(in, method, '(');
+        /* If object doesn't exists then return false */
+        if (object == nullptr) return false;
 
-    auto object = get_object(id);
-
-    /* If object doesn't exists then return false */
-    if (object == nullptr)
-        return false;
-
-    /* Methods implementation */
-    if (method == "in")
-    {
-        int x, y;
-        in >> x >> y;
-        if (x == object->getx() and
+        if (method == "in")
+        {
+            istringstream in(args);
+            int x, y;
+            in >> x >> y;
+            if (x == object->getx() and
             y == object->gety())
-            return true;
+                return true;
+        }
     }
+
     return false;
 }
 
 void Scenario::parse_command(const string& comm)
 {
+    string id, method, args;
+    parse_call(comm, id, method, args);
 
+    if (id.empty())
+    {
+        if (method == "exit") {
+            W::set(builder.at(Builder::main));
+        } else if (method == "close") {
+            W::pop();
+        }
+
+    } else {
+        auto object = get_object(id);
+        if (object == nullptr) return;
+    }
 }
 
 bool Scenario::parse_conditions(const vector<Condition> &conditions)

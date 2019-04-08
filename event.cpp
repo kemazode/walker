@@ -83,9 +83,6 @@ void Event::push_button(Arg button_ptr)
 
     /* Execute commands assigned to the button */
     button->event->m_scenario.parse_commands(button->commands);
-
-    /* Close dialog */
-    W::pop();
 }
 
 void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Commands &cmds)

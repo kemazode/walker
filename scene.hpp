@@ -66,6 +66,8 @@ class Scenario {
     void render_set_visible(int x, int y);
     void source_set_detected(int x, int y);
 
+    void parse_call(const string &call, string &id, string &method, string &args);
+
     void parse_yaml();
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);

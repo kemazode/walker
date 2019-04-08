@@ -43,6 +43,7 @@
 
 using std::string;
 using std::runtime_error;
+using std::vector;
 
 using Arg = intptr_t;
 
@@ -72,9 +73,6 @@ struct Action<F, void> {
     F operator()() const { return f(); }
 };
 
-using ActionA = Action<void, Arg>;
-using ActionV = Action<void, void>;
-
 struct ActionAV {
     ActionAV() : fa() {}
     ActionAV(void (*fv_)()) : arg(0), fv(fv_) {}
@@ -88,8 +86,8 @@ struct ActionAV {
 
     bool arg;
     union {
-        ActionA fa;
-        ActionV fv;
+        Action<void, Arg>  fa;
+        Action<void, void> fv;
     };
 };
 

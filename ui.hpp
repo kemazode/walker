@@ -40,7 +40,8 @@ struct Hooks {
         null,
         main,
         game,
-        menu
+        menu,
+        event_dialog,
     };
 };
 

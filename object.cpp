@@ -17,15 +17,15 @@
 #include "object.hpp"
 #include "yaml.h"
 
-Object* Object::create(const string& obj, int x, int y)
+Object& Object::create_from_type(const string &id, const string& obj, int x, int y)
 {
     if (obj == "Dwarf")
-        return new Dwarf(x, y);
+        return *(new Dwarf(id, x, y));
     else
         throw game_error("Unknown object type \"" + obj + "\".");
 }
 
-Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
+Object &Object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
     string type;
     int x = 0, y = 0;
@@ -56,7 +56,7 @@ Object* Object::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
             throw game_error( string("Found unknown field \"") + key + "\" in the object structure.");
     }
 
-    return create(type, x, y);
+    return create_from_type(id, type, x, y);
 }
 
 bool Object::move(int x, int y, char path)

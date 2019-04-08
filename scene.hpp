@@ -44,7 +44,6 @@ class Scenario {
     Map m_source;
     Map m_render;
 
-    variable_map m_variables;
     vector<Event> m_events;
 
     /* Polymorphism */
@@ -59,6 +58,8 @@ class Scenario {
 
     inline bool abroady(int y)
     { return y >= m_source.height() || y < 0; }
+
+    shared_ptr<Object> get_object(const string& id);
 
     void render_los(const Object& viewer);
 
@@ -88,6 +89,13 @@ public:
 
     void turn();
     void render();
+
+    /* For events */
+    bool parse_condition(const string& cond);
+    void parse_command(const string& comm);
+
+    bool parse_conditions(const Conditions &conditions);
+    void parse_commands(const Commands &commands);
 };
 
 #endif // SCENE_HPP

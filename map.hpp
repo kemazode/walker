@@ -13,6 +13,7 @@ typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
 class Map {
+    string m_id;
 
     int m_x, m_y;
 
@@ -22,9 +23,9 @@ class Map {
 public:
 
   Map() : m_x(0), m_y(0), m_width(0), m_height(0), m_strs() {}
-  Map(const string &map, int w, int h);
+  Map(const string &id, const string &map, int w, int h);
 
-  static Map create_from_yaml(const yaml_node_t *node, yaml_document_t *doc);
+  static Map create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
   static void generate(const string &f, int w, int h);
   static string generate(int w, int h);

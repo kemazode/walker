@@ -31,6 +31,9 @@
 using std::to_string;
 using std::string;
 using std::vector;
+using std::istringstream;
+using std::getline;
+
 using W = Window;
 
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
@@ -38,7 +41,7 @@ static const char *parse_error = "YAML configuration does not match the scenario
 Scenario::Scenario(const string &f, int l, int c) :
     m_lines(l),
     m_cols(c),
-    m_player(new Object(0, 0, 10, cchar(), "", ""))
+    m_player(new Object("player", 0, 0, 10, cchar(), "", ""))
 {
     load(f);
 
@@ -196,6 +199,14 @@ void Scenario::render()
     W::print(m_render.gettexts(), getx(), gety());    
 }
 
+shared_ptr<Object> Scenario::get_object(const string& id)
+{
+    for (auto &o : m_objects)
+        if (o->getid() == id)
+            return o;
+    return nullptr;
+}
+
 void Scenario::parse_yaml() {
 
     FILE *file = nullptr;
@@ -334,8 +345,7 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        Object* new_object = Object::create_from_yaml(node_value, doc);
-        m_objects.emplace_front ( new_object );
+        m_objects.emplace_front ( &Object::create_from_yaml(key, node_value, doc) );
 
         if (!strcmp(key, "player"))
             m_player = m_objects.front();
@@ -354,9 +364,9 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
         if (node_key->type != YAML_SCALAR_NODE)
             throw game_error(parse_error);
 
-       // const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
+        const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        m_source = Map::create_from_yaml(node_value, doc);
+        m_source = Map::create_from_yaml(key, node_value, doc);
     }
 }
 
@@ -372,8 +382,59 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
         if (node_key->type != YAML_SCALAR_NODE)
             throw game_error(parse_error);
 
-       // const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
+        const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        m_events.emplace_back( Event::create_from_yaml(node_value, doc, *this) );
+        m_events.emplace_back( Event::create_from_yaml(key, node_value, doc, *this) );
     }
+}
+
+bool Scenario::parse_condition(const string& cond)
+{
+//    auto pointer = cond.find('.');
+//    auto cbracket = cond.find(')');
+//    auto obracket = cond.find('(');
+
+//    string id = cond.substr(0, pointer);
+//    string method = cond.substr(pointer + 1, obracket - (pointer + 1));
+//    string args = cond.substr(obracket + 1, cbracket - (obracket + 1));
+
+    istringstream in(cond);
+    string id, method;
+
+    getline(in, id, '.');
+    getline(in, method, '(');
+
+    auto object = get_object(id);
+
+    /* If object doesn't exists then return false */
+    if (object == nullptr)
+        return false;
+
+    /* Methods implementation */
+    if (method == "in")
+    {
+        int x, y;
+        in >> x >> y;
+        if (x == object->getx() and
+            y == object->gety())
+            return true;
+    }
+    return false;
+}
+
+void Scenario::parse_command(const string& comm)
+{
+
+}
+
+bool Scenario::parse_conditions(const vector<Condition> &conditions)
+{
+    for (auto &f : conditions)
+        if (!parse_condition(f)) return false;
+    return true;
+}
+
+void Scenario::parse_commands(const vector<Command> &commands)
+{
+    for (auto &f : commands) parse_command(f);
 }

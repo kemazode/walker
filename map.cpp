@@ -64,7 +64,7 @@ void Map::push(const string &s)
     m_strs.push_back(s);
 }
 
-Map::Map(const string &map, int w, int h)
+Map::Map(const string &id, const string &map, int w, int h) : m_id(id)
 {
     if (map.empty())
         throw game_error("Map is empty.");
@@ -88,7 +88,7 @@ Map::Map(const string &map, int w, int h)
 
 }
 
-Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
+Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
     string map;
     int w = 0, h = 0;
@@ -119,7 +119,7 @@ Map Map::create_from_yaml(const yaml_node_t *node, yaml_document_t *doc)
             throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
-    return Map(map, w, h);
+    return Map(id, map, w, h);
 }
 
 void Map::decorate()

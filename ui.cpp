@@ -76,6 +76,11 @@ vector<vector<W::Hook>> hooks =
       W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
       W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM))
     },
+    { // Hooks::event_dialog
+      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM)),
+      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
+      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
+    },
 };
 
 vector<W::Builder> builder =

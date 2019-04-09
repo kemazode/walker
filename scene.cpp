@@ -28,6 +28,10 @@
 #include "object.hpp"
 #include "window.hpp"
 
+constexpr const int   DEFAULT_VISIBLE_RANGE = 10;
+constexpr const char *DEFAULT_PLAYER_ID     = "player";
+constexpr const char *DEFAULT_MAP_ID        = "map";
+
 using std::to_string;
 using std::string;
 using std::vector;
@@ -41,9 +45,9 @@ static const char *parse_error = "YAML configuration does not match the scenario
 Scenario::Scenario(const string &f, int l, int c) :
     m_lines(l),
     m_cols(c),
-    m_source("map", "", 0, 0),
-    m_render("map", "", 0, 0),
-    m_player(new Object("player", 0, 0, 10, cchar(), "", ""))
+    m_source(DEFAULT_MAP_ID, "", 0, 0),
+    m_render(DEFAULT_MAP_ID, "", 0, 0),
+    m_player(new Object(DEFAULT_PLAYER_ID, 0, 0, DEFAULT_VISIBLE_RANGE, cchar(), "", ""))
 {
     load(f);
 
@@ -106,14 +110,6 @@ void Scenario::source_set_detected(int x, int y)
 
 void Scenario::render_los(const Object &viewer)
 {
-    #define LIGHT(x, y)            \
-    if (!abroad(x, y))             \
-     {                             \
-        source_set_detected(x, y); \
-        render_set_visible(x, y);  \
-        if (!viewer.visible(m_source.at(x, y).c)) goto next_line; \
-     }
-
     using std::hypot;    
 
     int vision_range = viewer.get_vision_range();
@@ -139,7 +135,13 @@ void Scenario::render_los(const Object &viewer)
             signed char const iy((delta_y > 0) - (delta_y < 0));
             delta_y = std::abs(delta_y) << 1;
 
-            LIGHT(px, py)
+            if (!abroad(x, y))
+            {
+                source_set_detected(px, py);
+                render_set_visible(px, py);
+                if (!viewer.visible(m_source.at(px, py).c))
+                    goto next_line;
+            }
 
             if (delta_x >= delta_y)
             {
@@ -156,7 +158,13 @@ void Scenario::render_los(const Object &viewer)
                     error += delta_y;
                     px += ix;
 
-                    LIGHT(px, py)
+                    if (!abroad(px, py))
+                    {
+                        source_set_detected(px, py);
+                        render_set_visible(px, py);
+                        if (!viewer.visible(m_source.at(px, py).c))
+                            goto next_line;
+                    }
                 }
             }
             else
@@ -174,7 +182,13 @@ void Scenario::render_los(const Object &viewer)
                     error += delta_x;
                     py += iy;
 
-                    LIGHT(px, py)
+                    if (!abroad(px, py))
+                    {
+                        source_set_detected(px, py);
+                        render_set_visible(px, py);
+                        if (!viewer.visible(m_source.at(px, py).c))
+                            goto next_line;
+                    }
                 }
             }
             next_line: ;
@@ -252,7 +266,10 @@ void Scenario::parse_call(const string &call, string &id, string &method, string
 }
 bool Scenario::parse_condition(const string& cond)
 {
-    string id, method, args;
+    string id;
+    string method;
+    string args;
+
     parse_call(cond, id, method, args);
 
     /* Method implementations */
@@ -267,7 +284,8 @@ bool Scenario::parse_condition(const string& cond)
         if (method == "in")
         {
             istringstream in(args);
-            int x, y;
+            int x;
+            int y;
             in >> x >> y;
             if (x == (*object)->getx() and
             y == (*object)->gety())
@@ -280,13 +298,17 @@ bool Scenario::parse_condition(const string& cond)
 
 void Scenario::parse_command(const string& comm)
 {
-    string id, method, args;
+    string id;
+    string method;
+    string args;
+
     parse_call(comm, id, method, args);
 
     if (id.empty())
-    {
+    {        
         if (method == "scenario_exit") {
             W::set(builder.at(Builder::main));
+
         } else if (method == "window_close") {
             W::pop();
         }
@@ -310,7 +332,7 @@ void Scenario::parse_command(const string& comm)
     }
 }
 
-bool Scenario::parse_conditions(const vector<Condition> &conditions)
+bool Scenario::parse_conditions(const vector<string> &conditions)
 {
     bool result = 0;
     bool and_sequence = 1;
@@ -326,10 +348,10 @@ bool Scenario::parse_conditions(const vector<Condition> &conditions)
 
     result += and_sequence;
 
-    return result; // В каком-то месте пропадает scenario из хода событий
+    return result;
 }
 
-void Scenario::parse_commands(const vector<Command> &commands)
+void Scenario::parse_commands(const vector<string> &commands)
 {
     for (auto &f : commands) parse_command(f);
 }
@@ -474,7 +496,7 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
 
         m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
 
-        if (!strcmp(key, "player"))
+        if (!strcmp(key, DEFAULT_PLAYER_ID))
             m_player = m_objects.front();
     }
 }

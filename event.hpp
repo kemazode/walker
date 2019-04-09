@@ -29,16 +29,13 @@ using std::forward_list;
 using std::vector;
 using std::string;
 
-class Scenario;
-
-using Condition = string;
-using Command   = string;
-using Conditions = vector<Condition>;
-using Commands = vector<Command>;
+using Conditions = vector<string>;
+using Commands = vector<string>;
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
+class Scenario;
 class Event;
 
 class Button {
@@ -97,23 +94,20 @@ public:
           const string &title,
           const W::Position& pos,
           Scenario &scene)
-        : Base(id),
+        :
+          Base(id),
           m_conditions(conds),
           m_buttons(butts),
           m_commands(cmds),
           m_message(msg),
-          m_scenario(scene),
           m_title(title),
-          m_position(pos)
+          m_position(pos),
+          m_scenario(scene)
     {}
 
 
     static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
     static void push_button(Arg button_ptr);
-
-    Commands&  get_commands();
-    Buttons&   get_buttons();
-    Conditions get_conditions();
 
     /* If the check is successful, then execute actions */
     void test();

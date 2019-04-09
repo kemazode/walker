@@ -119,9 +119,9 @@ void scenario_init(Arg arg)
 {
     const string &scene_load = *reinterpret_cast<const string *>(arg);
 
-    auto location = W::getlocation(builder.at(Builder::game).p);
+    auto location = W::get_location(builder.at(Builder::game).p);
 
-    try {
+    try {        
         scenario.reset(new Scenario(scene_load, location.lines, location.cols));
 
     } catch(const game_error &er)  {                
@@ -129,7 +129,7 @@ void scenario_init(Arg arg)
         return;
     }
     
-    W::set(builder.at(Builder::game));
+    W::set(builder.at(Builder::game));    
     scenario->render();
 }
 

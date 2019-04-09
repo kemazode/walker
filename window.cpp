@@ -38,7 +38,7 @@ Window::Window(const Builder &c)
 {    
     m_pos = c.p;
 
-    auto location = getlocation(m_pos);
+    auto location = get_location(m_pos);
 
     m_win = newwin(location.lines + LINES_BORDERS,
                    location.cols + COLS_BORDERS,
@@ -206,7 +206,7 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
 
-    auto location = getlocation(m_pos);
+    auto location = get_location(m_pos);
 
     int xend = x + location.cols;
     int yend = y + location.lines;
@@ -239,7 +239,7 @@ void Window::_print(const vector<Text> &vt, int x, int y)
 
 void Window::_print(const Text &t)
 {
-    auto location = getlocation(m_pos);
+    auto location = get_location(m_pos);
 
     int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
     int th = text_height(t, location.cols - 2*TEXT_X);
@@ -319,15 +319,15 @@ int waddcchar(WINDOW *w, const cchar &t)
     return rc;
 }
 
-Window::Location Window::getlocation(Position p)
+Window::Location Window::get_location(Position p)
 {
     switch (p) {
     case full:  return Location{0, 0, LINES - LINES_BORDERS, COLS - COLS_BORDERS};
     case aver:  return Location{COLS/8, LINES/8, LINES - LINES/4 - LINES_BORDERS, COLS - COLS/4 - COLS_BORDERS};
     case small: return Location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
-    case game: return getlocation(full);
-    case stat: return getlocation(aver);
-    case log:  return getlocation(aver);
+    case game: return get_location(full);
+    case stat: return get_location(aver);
+    case log:  return get_location(aver);
     }
     return Location{0, 0, 0, 0};
 }

@@ -28,7 +28,7 @@ static void parse_position_from_yaml  (const yaml_node_t *node, W::Position &p);
 /* Dynamic alloc */
 Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene)
 {
-    Event *event = new Event(id, scene);
+    auto event = new Event(id, scene);
 
     event->m_title = "Event";
     event->m_position = W::small;

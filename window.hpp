@@ -161,10 +161,10 @@ public:
     static void set(const Builder &c)
     { clear(); push(c); }
 
-    static Location getlocation(Position p);
+    static Location get_location(Position p);
 
-    static Location getlocation()
-    { return topw? getlocation(topw->m_pos): Location{0, 0, 0, 0}; }
+    static Location get_location()
+    { return topw? get_location(topw->m_pos): Location{0, 0, 0, 0}; }
 
 };
 

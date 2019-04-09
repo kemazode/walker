@@ -61,7 +61,7 @@ void Map::push(const string &s)
                          ") does not match the specified length (" +
                          to_string(m_width) + ").");
     ++m_height;
-    m_strs.push_back(s);
+    m_strs.emplace_back(s);
 }
 
 Map::Map(const string &id, const string &map, int w, int h) : Base(id)
@@ -90,7 +90,8 @@ Map::Map(const string &id, const string &map, int w, int h) : Base(id)
 Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
     string map;
-    int w = 0, h = 0;
+    int w = 0;
+    int h = 0;
 
     if (!node)
         throw game_error("Empty map structure.");

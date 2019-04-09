@@ -59,7 +59,7 @@ public:
 
 class Dwarf : public Object {
 public:    
-    Dwarf(const string &id, int x, int y) : Object(id, x, y, 10, cchar('@', A_BOLD), "~#", "#") {}
+    Dwarf(const string &id, int x, int y);
 };
 
 #endif // OBJECT_HPP

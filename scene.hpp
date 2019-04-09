@@ -22,16 +22,13 @@
 #include <memory>
 
 #include "map.hpp"
-#include "event.hpp"
 
 class Object;
 class Event;
 
 using std::shared_ptr;
-using std::forward_list;
 using std::list;
 using std::string;
-
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
@@ -45,31 +42,28 @@ class Scenario {
     Map m_source;
     Map m_render;
 
-
-    list<shared_ptr<Event>> m_events;
-    /* Polymorphism */
+    list<shared_ptr<Event>>  m_events;
     list<shared_ptr<Object>> m_objects;
+
     shared_ptr<Object> m_player;
 
-    inline bool abroad(int x, int y)
+    bool abroad(int x, int y)
     { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
 
-    inline bool abroadx(int x)
+    bool abroadx(int x)
     { return x >= m_source.width() || x < 0; }
 
-    inline bool abroady(int y)
+    bool abroady(int y)
     { return y >= m_source.height() || y < 0; }
 
     list<shared_ptr<Object>>::iterator get_object(const string& id);
     list<shared_ptr<Event>>::iterator  get_event(const string& id);
 
     void render_los(const Object& viewer);
-
     void render_set_visible(int x, int y);
     void source_set_detected(int x, int y);
 
     void parse_call(const string &call, string &id, string &method, string &args);
-
     void parse_yaml();
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
@@ -87,9 +81,9 @@ public:
     int getx()   const { return m_source.getx(); }
     int gety()   const { return m_source.gety(); }
 
-    void set_view(int x, int y);
+    void set_view   (int x, int y);
     void move_player(int x, int y);    
-    void move_view(int x, int y)
+    void move_view  (int x, int y)
     { set_view(m_source.getx() + x, m_source.gety() + y); }
 
     void turn();
@@ -97,10 +91,10 @@ public:
 
     /* For events */
     bool parse_condition(const string& cond);
-    void parse_command(const string& comm);
+    void parse_command  (const string& comm);
 
-    bool parse_conditions(const Conditions &conditions);
-    void parse_commands(const Commands &commands);
+    bool parse_conditions(const vector<string> &conditions);
+    void parse_commands  (const vector<string> &commands);
 };
 
 #endif // SCENE_HPP

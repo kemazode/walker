@@ -66,15 +66,22 @@ bool Object::move(int x, int y, char path)
         m_x += x;
         m_y += y;
         return true;
-    } else
-        return false;
+    }
+    return false;
 }
 
 bool Object::visible(char path) const
 {
-    if (m_unvisible.find(path) == string::npos)
-        return true;
-    else
-        return false;
+    return m_unvisible.find(path) == string::npos;
 }
 
+/* ------------------------------------------------------------ */
+
+constexpr const int    DWARF_VISIBLE_RANGE = 10;
+constexpr const char  *DWARF_OBSTACLES     = "~#";
+constexpr const char  *DWARF_UNVISIBLE     = "#";
+constexpr const char   DWARF_SYMBOL        = '@';
+constexpr const attr_t DWARF_ATTR          = A_BOLD;
+
+Dwarf::Dwarf(const string &id, int x, int y)
+    : Object(id, x, y, DWARF_VISIBLE_RANGE, cchar(DWARF_SYMBOL, DWARF_ATTR), DWARF_OBSTACLES, DWARF_UNVISIBLE) {};

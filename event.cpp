@@ -21,7 +21,7 @@
 
 static void parse_commands_from_yaml  (const yaml_node_t *node, yaml_document_t *doc, Commands &cmds);
 static void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds);
-static void parse_buttons_from_yaml   (const yaml_node_t *node, yaml_document_t *doc, Buttons &butts);
+static void parse_items_from_yaml   (const yaml_node_t *node, yaml_document_t *doc, Items &butts);
 static void parse_string_from_yaml    (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml  (const yaml_node_t *node, W::Position &p);
 
@@ -60,8 +60,8 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
         } else if (!strcmp("message", key)) {
             parse_string_from_yaml(node_value, event->m_message);
 
-        } else if (!strcmp("buttons", key)) {
-            parse_buttons_from_yaml(node_value, doc, event->m_buttons);
+        } else if (!strcmp("items", key)) {
+            parse_items_from_yaml(node_value, doc, event->m_items);
 
         } else if (!strcmp("do", key)) {
             parse_commands_from_yaml(node_value, doc, event->m_commands);
@@ -80,9 +80,9 @@ void Event::test()
         } else {
             vector<W::Menu> menu;
 
-            for (auto &b : m_buttons) {
+            for (auto &b : m_items) {
                 b.set_event(this);
-                menu.emplace_back( W::Menu(b.get_label(), ActionAV(push_button, Arg(&b))));
+                menu.emplace_back( W::Menu(b.get_label(), ActionAV(push_item, Arg(&b))));
             }
 
             auto wptr = W::push( W::Builder(m_position, menu, hooks.at(Hooks::event_dialog), m_message, m_title) );
@@ -94,12 +94,12 @@ void Event::test()
     }
 }
 
-void Event::push_button(Arg button_ptr)
+void Event::push_item(Arg item_ptr)
 {
-    auto button = reinterpret_cast<Button *>(button_ptr);
+    auto item = reinterpret_cast<Item *>(item_ptr);
 
-    /* Execute commands assigned to the button */
-    button->get_event()->m_scenario.parse_commands(button->get_commands());
+    /* Execute commands assigned to the item */
+    item->get_event()->m_scenario.parse_commands(item->get_commands());
 }
 
 void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Commands &cmds)
@@ -132,7 +132,7 @@ void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, C
     }
 }
 
-void parse_buttons_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Buttons &butts)
+void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items &butts)
 {
     if (node->type != YAML_SEQUENCE_NODE)
         throw game_error("Incorrectly set \"press\" struct in the event structure.");
@@ -144,7 +144,7 @@ void parse_buttons_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Butt
         if (seq_value->type != YAML_MAPPING_NODE)
             throw game_error("Incorrectly set \"press\" struct in the event structure.");
 
-        butts.push_back(Button());
+        butts.push_back(Item());
         auto &butt = butts.back();
 
         for (auto b = seq_value->data.mapping.pairs.start; b < seq_value->data.mapping.pairs.top; ++b)
@@ -183,11 +183,11 @@ static void parse_position_from_yaml(const yaml_node_t *node, W::Position &p)
 
    const char *value = reinterpret_cast<const char *>(node->data.scalar.value);
 
-   if (!strcmp(value, "small")) {
+   if (!strcmp(value, "Small")) {
        p = W::small;
-   } else if (!strcmp(value, "average")) {
+   } else if (!strcmp(value, "Average")) {
        p = W::aver;
-   } else if (!strcmp(value, "full")) {
+   } else if (!strcmp(value, "Full")) {
        p = W::full;
    } else
        throw game_error(string("Invalid position value \"") + value + "\" in the event structure.");

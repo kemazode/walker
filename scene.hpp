@@ -44,8 +44,11 @@ class Scenario {
 
     list<shared_ptr<Event>>  m_events;
     list<shared_ptr<Object>> m_objects;
-
     shared_ptr<Object> m_player;
+
+    vector<string> m_identifiers;
+
+    void add_id(const string &id);
 
     bool abroad(int x, int y)
     { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
@@ -68,8 +71,6 @@ class Scenario {
     void parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc);
-
-    void validate();
 public:    
 
     Scenario(const string &f, int l, int c);

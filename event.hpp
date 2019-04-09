@@ -38,7 +38,7 @@ typedef struct yaml_document_s yaml_document_t;
 class Scenario;
 class Event;
 
-class Button {
+class Item {
 
     string m_label;
     Commands m_commands;
@@ -47,9 +47,9 @@ class Button {
     const Event *m_event = nullptr;
 
 public:
-    Button() {}
+    Item() {}
 
-    Button(const string &label,
+    Item(const string &label,
            const Commands &commands)
         : m_label(label),
           m_commands(commands) {}
@@ -67,12 +67,12 @@ public:
     { m_event = event; }
 };
 
-using Buttons = vector<Button>;
+using Items = vector<Item>;
 
 class Event : public Base {
 
     Conditions  m_conditions;
-    Buttons     m_buttons;
+    Items     m_items;
     Commands    m_commands;
     string      m_message;
     string      m_title;
@@ -88,7 +88,7 @@ public:
 
     Event(const string &id,
           const Conditions &conds,
-          const Buttons &butts,
+          const Items &butts,
           const Commands &cmds,
           const string &msg,
           const string &title,
@@ -97,7 +97,7 @@ public:
         :
           Base(id),
           m_conditions(conds),
-          m_buttons(butts),
+          m_items(butts),
           m_commands(cmds),
           m_message(msg),
           m_title(title),
@@ -107,7 +107,7 @@ public:
 
 
     static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
-    static void push_button(Arg button_ptr);
+    static void push_item(Arg item_ptr);
 
     /* If the check is successful, then execute actions */
     void test();

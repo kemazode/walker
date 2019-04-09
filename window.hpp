@@ -141,7 +141,7 @@ public:
         return false;
     }
 
-    // Static methods for TOP Window in th    static int getButtons()
+    /* Static methods for the TOP Window */
 
     static bool refresh()
     { return topw? (static_cast<void>(topw->_refresh()), true) : false; }

@@ -20,6 +20,7 @@
 #include <sstream>
 #include <yaml.h>
 #include <cmath>
+#include <algorithm>
 
 #include "scene.hpp"
 #include "utils.hpp"
@@ -31,12 +32,15 @@
 constexpr const int   DEFAULT_VISIBLE_RANGE = 10;
 constexpr const char *DEFAULT_PLAYER_ID     = "player";
 constexpr const char *DEFAULT_MAP_ID        = "map";
+constexpr const char *RESERVED_WINDOW_ID    = "window";
+constexpr const char *RESERVED_SCENARIO_ID  = "scenario";
 
 using std::to_string;
 using std::string;
 using std::vector;
 using std::istringstream;
 using std::getline;
+using std::find;
 
 using W = Window;
 
@@ -47,7 +51,8 @@ Scenario::Scenario(const string &f, int l, int c) :
     m_cols(c),
     m_source(DEFAULT_MAP_ID, "", 0, 0),
     m_render(DEFAULT_MAP_ID, "", 0, 0),
-    m_player(new Object(DEFAULT_PLAYER_ID, 0, 0, DEFAULT_VISIBLE_RANGE, cchar(), "", ""))
+    m_player(new Object(DEFAULT_PLAYER_ID, 0, 0, DEFAULT_VISIBLE_RANGE, cchar(), "", "")),
+    m_identifiers({RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID})
 {
     load(f);
 
@@ -61,9 +66,6 @@ void Scenario::load(const string& f)
 {
     m_file = f;
     parse_yaml();
-
-    /* Check data correctnes */
-    validate();
 }
 
 void Scenario::move_player(int x, int y)
@@ -272,24 +274,43 @@ bool Scenario::parse_condition(const string& cond)
 
     parse_call(cond, id, method, args);
 
-    /* Method implementations */
     if (id.empty()) {
 
     } else {
-        auto object = get_object(id);
-
-        /* If object doesn't exists then return false */
-        if (object == m_objects.end()) return false;
-
-        if (method == "in")
+        if (id == RESERVED_WINDOW_ID)
         {
-            istringstream in(args);
-            int x;
-            int y;
-            in >> x >> y;
-            if (x == (*object)->getx() and
-            y == (*object)->gety())
-                return true;
+
+            return false;
+        }
+
+        if (id == RESERVED_SCENARIO_ID)
+        {
+
+            return false;
+        }
+
+        auto object = get_object(id);               
+        if (object != m_objects.end())
+        {
+            if (method == "in")
+            {
+                istringstream in(args);
+                int x;
+                int y;
+                in >> x >> y;
+                if (x == (*object)->getx() and
+                        y == (*object)->gety())
+                    return true;
+            }
+
+            return false;
+        }
+
+        auto event = get_event(id);
+        if (event != m_events.end())
+        {
+
+            return false;
         }
     }
 
@@ -305,30 +326,46 @@ void Scenario::parse_command(const string& comm)
     parse_call(comm, id, method, args);
 
     if (id.empty())
-    {        
-        if (method == "scenario_exit") {
-            W::set(builder.at(Builder::main));
-
-        } else if (method == "window_close") {
-            W::pop();
-        }
+    {
 
     } else {
+
+        if (id == RESERVED_WINDOW_ID)
+        {
+            if (method == "close")
+                W::pop();
+
+            return;
+        }
+
+        if (id == RESERVED_SCENARIO_ID)
+        {
+            if (method == "exit")
+                W::set(builder.at(Builder::main));
+
+            return;
+        }
+
         auto object = get_object(id);
-        if (object != m_objects.end()) {
+        if (object != m_objects.end())
+        {
 
             return;
         }
 
         auto event = get_event(id);
-        if (event != m_events.end()) {
+        if (event != m_events.end())
+        {
 
-            /* Don't call erase, because we need to save pointers to the next and previous node
-            (it will be erased if contain null) */
+            /* Don't call erase, because we need to save
+             * pointers to the next and previous node
+             * (it will be anyway erased if contains null)
+             */
+
             if (method == "destroy")
                event->reset();
             return;
-        }
+        }                
     }
 }
 
@@ -495,6 +532,7 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
+        add_id(key);
 
         if (!strcmp(key, DEFAULT_PLAYER_ID))
             m_player = m_objects.front();
@@ -516,6 +554,7 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         m_source = Map::create_from_yaml(key, node_value, doc);
+        add_id(key);
     }
 }
 
@@ -534,25 +573,14 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         m_events.emplace_front( Event::create_from_yaml(key, node_value, doc, *this) );
+        add_id(key);
     }
 }
 
-void Scenario::validate()
+void Scenario::add_id(const string &id)
 {
-    /* Checking for uniq identifiers */
-    const string &map_id = m_source.get_id();
-
-    for (auto &o : m_objects)
-        for (auto &e : m_events)
-        {
-            auto &o_id = o->get_id();
-            auto &e_id = e->get_id();
-
-            if (o_id == e_id)
-                throw game_error("Found identical identifiers \"" + o_id + "\" in the structures \"objects\" and \"events\".");
-            else if (e_id == map_id)
-                throw game_error("Found identical identifiers \"" + map_id + "\" in the structures \"maps\" and \"events\".");
-            else if (map_id == o_id)
-                throw game_error("Found identical identifiers \"" + map_id + "\" in the structures \"maps\" and \"objects\".");
-        }
+   if (find(m_identifiers.begin(), m_identifiers.end(), id) != m_identifiers.end())
+       throw game_error("Found identical identifiers \"" + id + "\".");
+   else
+       m_identifiers.emplace_back(id);
 }

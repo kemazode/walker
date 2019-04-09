@@ -17,7 +17,7 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
 
-#include <forward_list>
+#include <list>
 #include <string>
 #include <memory>
 
@@ -29,6 +29,7 @@ class Event;
 
 using std::shared_ptr;
 using std::forward_list;
+using std::list;
 using std::string;
 
 
@@ -44,10 +45,10 @@ class Scenario {
     Map m_source;
     Map m_render;
 
-    vector<Event> m_events;
 
+    list<shared_ptr<Event>> m_events;
     /* Polymorphism */
-    forward_list<shared_ptr<Object>> m_objects;
+    list<shared_ptr<Object>> m_objects;
     shared_ptr<Object> m_player;
 
     inline bool abroad(int x, int y)
@@ -59,7 +60,8 @@ class Scenario {
     inline bool abroady(int y)
     { return y >= m_source.height() || y < 0; }
 
-    shared_ptr<Object> get_object(const string& id);
+    list<shared_ptr<Object>>::iterator get_object(const string& id);
+    list<shared_ptr<Event>>::iterator  get_event(const string& id);
 
     void render_los(const Object& viewer);
 

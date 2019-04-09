@@ -25,14 +25,13 @@ static void parse_buttons_from_yaml   (const yaml_node_t *node, yaml_document_t 
 static void parse_string_from_yaml    (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml  (const yaml_node_t *node, W::Position &p);
 
-Event Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene)
+/* Dynamic alloc */
+Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene)
 {
-    Conditions  conds;
-    Buttons     butts;
-    Commands    cmds;
-    string      msg;
-    string      title = "Event";
-    W::Position p = W::small;
+    Event *event = new Event(id, scene);
+
+    event->m_title = "Event";
+    event->m_position = W::small;
 
     if (!node)
         throw game_error("Empty map structure.");
@@ -49,29 +48,28 @@ Event Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_do
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-
         if (!strcmp("if", key)) {
-            parse_conditions_from_yaml(node_value, doc, conds);
+            parse_conditions_from_yaml(node_value, doc, event->m_conditions);
 
         } else if (!strcmp("title", key)) {
-            parse_string_from_yaml(node_value, title);
+            parse_string_from_yaml(node_value, event->m_title);
 
         } else if (!strcmp("size", key)) {
-            parse_position_from_yaml(node_value, p);
+            parse_position_from_yaml(node_value, event->m_position);
 
         } else if (!strcmp("message", key)) {
-            parse_string_from_yaml(node_value, msg);
+            parse_string_from_yaml(node_value, event->m_message);
 
         } else if (!strcmp("buttons", key)) {
-            parse_buttons_from_yaml(node_value, doc, butts);
+            parse_buttons_from_yaml(node_value, doc, event->m_buttons);
 
         } else if (!strcmp("do", key)) {
-            parse_commands_from_yaml(node_value, doc, cmds);
+            parse_commands_from_yaml(node_value, doc, event->m_commands);
         } else
             throw game_error( string("Invalid field in event structure: \"") + key + "\"");
     }
 
-    return Event(id, conds, butts, cmds, msg, title, p, scene);
+    return event;
 }
 
 void Event::test()
@@ -81,8 +79,11 @@ void Event::test()
             m_scenario.parse_commands(m_commands);
         } else {
             vector<W::Menu> menu;
-            for (auto &b : m_buttons)
+
+            for (auto &b : m_buttons) {
+                b.event = this;
                 menu.emplace_back( W::Menu(b.label, ActionAV(push_button, Arg(&b))));
+            }
 
             auto wptr = W::push( W::Builder(m_position, menu, hooks.at(Hooks::event_dialog), m_message, m_title) );
 
@@ -133,23 +134,20 @@ void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, C
 
 void parse_buttons_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Buttons &butts)
 {
-    if (node->type != YAML_MAPPING_NODE)
+    if (node->type != YAML_SEQUENCE_NODE)
         throw game_error("Incorrectly set \"press\" struct in the event structure.");
 
-    for (auto b = node->data.mapping.pairs.start; b < node->data.mapping.pairs.top; ++b)
+    for (auto b = node->data.sequence.items.start; b < node->data.sequence.items.top; ++b)
     {
-        auto node_key = yaml_document_get_node(doc, b->key);
-        auto node_value = yaml_document_get_node(doc, b->value);
+        auto seq_value = yaml_document_get_node(doc, *b);
 
-        if (node_key->type != YAML_SCALAR_NODE and node_value->type != YAML_MAPPING_NODE)
+        if (seq_value->type != YAML_MAPPING_NODE)
             throw game_error("Incorrectly set \"press\" struct in the event structure.");
 
-        const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
-
-        butts.push_back(Button(key));
+        butts.push_back(Button());
         auto &butt = butts.back();
 
-        for (auto b = node_value->data.mapping.pairs.start; b < node_value->data.mapping.pairs.top; ++b)
+        for (auto b = seq_value->data.mapping.pairs.start; b < seq_value->data.mapping.pairs.top; ++b)
         {
             auto node_key = yaml_document_get_node(doc, b->key);
             auto node_value = yaml_document_get_node(doc, b->value);

@@ -21,14 +21,12 @@
 using std::string;
 
 #include "utils.hpp"
+#include "base.hpp"
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class Object
-{
-private:
-    string m_id;
+class Object : public Base {
 
     int m_x, m_y;
     int m_vision_range;
@@ -40,13 +38,13 @@ private:
 public:
 
     Object(const string &id, int x, int y, int visr, const cchar &c, const string &imp, const string &unvis) :
-        m_id(id), m_x(x), m_y(y), m_vision_range(visr),
+        Base(id), m_x(x), m_y(y), m_vision_range(visr),
         m_c(c),
         m_obstacles(imp),
         m_unvisible(unvis) {}
 
-    static Object& create_from_type(const string &id, const string& obj, int x, int y);
-    static Object& create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+    static Object* create_from_type(const string &id, const string& obj, int x, int y);
+    static Object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
     virtual ~Object() {}
 
@@ -57,7 +55,6 @@ public:
     int              gety() const { return m_y;  }
     int  get_vision_range() const { return m_vision_range; }
     const cchar& getcchar() const { return m_c;  }
-    const string&   getid() const { return m_id; }
 };
 
 class Dwarf : public Object {

@@ -41,6 +41,8 @@ static const char *parse_error = "YAML configuration does not match the scenario
 Scenario::Scenario(const string &f, int l, int c) :
     m_lines(l),
     m_cols(c),
+    m_source("map", "", 0, 0),
+    m_render("map", "", 0, 0),
     m_player(new Object("player", 0, 0, 10, cchar(), "", ""))
 {
     load(f);
@@ -184,8 +186,13 @@ void Scenario::turn()
 
     render();
 
-    for (auto &e : m_events)
-        e.test();
+    for (auto iter = m_events.begin(); iter != m_events.end(); ++iter) {
+        (*iter)->test();
+
+        /* Remove event if its pointer equal to null */
+        if (iter->get() == nullptr)
+            iter = m_events.erase(iter);
+    }
 }
 
 void Scenario::render()
@@ -199,12 +206,129 @@ void Scenario::render()
     W::print(m_render.gettexts(), getx(), gety());    
 }
 
-shared_ptr<Object> Scenario::get_object(const string& id)
+list<shared_ptr<Object>>::iterator Scenario::get_object(const string& id)
 {
-    for (auto &object : m_objects)
-        if (object->getid() == id)
-            return object;
-    return nullptr;
+    for (auto iter = m_objects.begin(); iter != m_objects.end(); ++iter)
+    {
+        if ((*iter)->get_id() == id)
+            return iter;
+    }
+    return m_objects.end();
+}
+
+list<shared_ptr<Event>>::iterator Scenario::get_event(const string& id)
+{
+    for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
+    {
+        if ((*iter)->get_id() == id)
+            return iter;
+    }
+    return m_events.end();
+}
+
+void Scenario::parse_call(const string &call, string &id, string &method, string &args)
+{
+        auto pointer  = call.find('.');
+        auto cbracket = call.rfind(')');
+        auto obracket = call.find('(');
+
+        /* function(2, 4, '.') - hasn't object, but point exists */
+        if (pointer > obracket or pointer == string::npos) {
+            pointer = 0;
+            id = "";
+        } else
+            id = call.substr(0, pointer++);
+
+        method = call.substr(pointer, obracket - pointer);
+
+        if (obracket == string::npos or cbracket == string::npos)
+            args = "";
+        else
+            args = call.substr(obracket + 1, cbracket - (obracket + 1));
+
+}
+bool Scenario::parse_condition(const string& cond)
+{
+    string id, method, args;
+    parse_call(cond, id, method, args);
+
+    /* Method implementations */
+    if (id.empty()) {
+
+    } else {
+        auto object = get_object(id);
+
+        /* If object doesn't exists then return false */
+        if (object == m_objects.end()) return false;
+
+        if (method == "in")
+        {
+            istringstream in(args);
+            int x, y;
+            in >> x >> y;
+            if (x == (*object)->getx() and
+            y == (*object)->gety())
+                return true;
+        }
+    }
+
+    return false;
+}
+
+void Scenario::parse_command(const string& comm)
+{
+    string id, method, args;
+    parse_call(comm, id, method, args);
+
+    if (id.empty())
+    {
+        if (method == "scenario_exit") {
+            W::set(builder.at(Builder::main));
+        } else if (method == "window_close") {
+            W::pop();
+        }
+
+    } else {
+        auto object = get_object(id);
+        if (object != m_objects.end()) {
+
+            return;
+        }
+
+        auto event = get_event(id);
+        if (event != m_events.end()) {
+
+            /* Don't call erase, because we need to save pointers to the next and previous node
+            (it will be erased if contain null) */
+            if (method == "destroy")
+               event->reset();
+            return;
+        }
+    }
+}
+
+bool Scenario::parse_conditions(const vector<Condition> &conditions)
+{
+    bool result = 0;
+    bool and_sequence = 1;
+
+    for (auto &f : conditions) {
+        if (f == "or") {
+            result += and_sequence;
+            and_sequence = 1;
+        }
+        else
+            and_sequence *= parse_condition(f);
+    }
+
+    result += and_sequence;
+
+    return result; // В каком-то месте пропадает scenario из хода событий
+}
+
+void Scenario::parse_commands(const vector<Command> &commands)
+{
+    for (auto &f : commands) parse_command(f);
 }
 
 void Scenario::parse_yaml() {
@@ -345,7 +469,7 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        m_objects.emplace_front ( &Object::create_from_yaml(key, node_value, doc) );
+        m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
 
         if (!strcmp(key, "player"))
             m_player = m_objects.front();
@@ -384,86 +508,8 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        m_events.emplace_back( Event::create_from_yaml(key, node_value, doc, *this) );
+        m_events.emplace_front( Event::create_from_yaml(key, node_value, doc, *this) );
     }
 }
 
-void Scenario::parse_call(const string &call, string &id, string &method, string &args)
-{
-        auto pointer  = call.find('.');
-        auto cbracket = call.rfind(')');
-        auto obracket = call.find('(');
 
-        /* function(2, 4, '.') - hasn't object, but point exists */
-        if (pointer > obracket or pointer == string::npos) {
-            pointer = 0;
-            id = "";
-        } else
-            id = call.substr(0, pointer++);
-
-        method = call.substr(pointer, obracket - pointer);
-
-        if (obracket == string::npos or cbracket == string::npos)
-            args = "";
-        else
-            args = call.substr(obracket + 1, cbracket - (obracket + 1));
-
-}
-bool Scenario::parse_condition(const string& cond)
-{
-    string id, method, args;
-    parse_call(cond, id, method, args);
-
-    /* Method implementations */
-    if (id.empty()) {
-
-    } else {
-        auto object = get_object(id);
-
-        /* If object doesn't exists then return false */
-        if (object == nullptr) return false;
-
-        if (method == "in")
-        {
-            istringstream in(args);
-            int x, y;
-            in >> x >> y;
-            if (x == object->getx() and
-            y == object->gety())
-                return true;
-        }
-    }
-
-    return false;
-}
-
-void Scenario::parse_command(const string& comm)
-{
-    string id, method, args;
-    parse_call(comm, id, method, args);
-
-    if (id.empty())
-    {
-        if (method == "exit") {
-            W::set(builder.at(Builder::main));
-        } else if (method == "close") {
-            W::pop();
-        }
-
-    } else {
-        auto object = get_object(id);
-        if (object == nullptr) return;
-    }
-}
-
-bool Scenario::parse_conditions(const vector<Condition> &conditions)
-{
-    for (auto &f : conditions)
-        if (!parse_condition(f)) return false;
-    return true;
-}
-
-void Scenario::parse_commands(const vector<Command> &commands)
-{
-    for (auto &f : commands) parse_command(f);
-}

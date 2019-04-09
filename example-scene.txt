@@ -26,18 +26,23 @@ objects:
   type: Dwarf
   x: 1
   y: 1
-  
+
+# "or" позволяет разделить список на правую и левую части, 
+# таким образом, что событие выполняется, если одна из этих частей выполняется
 events:
   ev1:                                          # Event id (any string)
-    if: [ player.in(2 2) ]                      # Conditions (true if player are in (2, 2) position).
+    if: [ player.in(2 2), or, player.in(2 1), or, player.in(1 2)]                      # Conditions (true if player are in (2, 2) position).
     title: "Example"                            # Window title.
-    size: small	                                # Window size (can also be: "small", "average", "full").
+    size: small                                 # Window size (can also be: "small", "average", "full").
     message: "Hello, this is example scenario!" # Message.
     buttons:                                    # Buttons.
-       yes:                                     # Button id.
+       -                                    # Button id.
          label: I walk here a little.           # Button label.                                                
-         do: [ close() ]                        # close() - "close dialog window"
-       no: 
+         do: [ ev1.destroy(), window_close() ]  # window_close() - "close dialog window"
+       -
          label: "I want to leave."              
-         do: [ exit() ]                         # Commands activated by pressing a button (exit() - exit from scenario).
+         do: [ scenario_exit() ]                         # Commands activated by pressing a button (exit() - exit from scenario).
     do: []                                      # Commands acrtivated if message is empty (window will not appear).
+
+
+

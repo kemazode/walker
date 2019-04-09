@@ -8,13 +8,12 @@ using std::vector;
 using std::string;
 
 #include "utils.hpp"
+#include "base.hpp"
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class Map {
-    string m_id;
-
+class Map  : public Base {
     int m_x, m_y;
 
     int m_width, m_height;
@@ -22,7 +21,6 @@ class Map {
 
 public:
 
-  Map() : m_x(0), m_y(0), m_width(0), m_height(0), m_strs() {}
   Map(const string &id, const string &map, int w, int h);
 
   static Map create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);

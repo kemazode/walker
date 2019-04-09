@@ -64,14 +64,14 @@ void Map::push(const string &s)
     m_strs.push_back(s);
 }
 
-Map::Map(const string &id, const string &map, int w, int h) : m_id(id)
+Map::Map(const string &id, const string &map, int w, int h) : Base(id)
 {
-    if (map.empty())
-        throw game_error("Map is empty.");
-    else if (w == 0)
-        throw game_error("Map width is zero.");
-    else if (h == 0)
-        throw game_error("Map height is zero.");
+//    if (map.empty())
+//        throw game_error("Map is empty.");
+//    else if (w == 0)
+//        throw game_error("Map width is zero.");
+//    else if (h == 0)
+//        throw game_error("Map height is zero.");
 
     m_x = m_y = 0;
 
@@ -85,7 +85,6 @@ Map::Map(const string &id, const string &map, int w, int h) : m_id(id)
         string &&temp = map.substr(pos, newline - pos);
         this->push(temp);              
     }
-
 }
 
 Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)

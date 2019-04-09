@@ -12,7 +12,6 @@ set(SOURCES main.cpp
             utils.cpp
             event.cpp
             map.cpp
-            base.cpp
             ui.cpp
             )
             

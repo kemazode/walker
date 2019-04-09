@@ -57,6 +57,9 @@ void Scenario::load(const string& f)
 {
     m_file = f;
     parse_yaml();
+
+    /* Check data correctnes */
+    validate();
 }
 
 void Scenario::move_player(int x, int y)
@@ -512,4 +515,22 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
     }
 }
 
+void Scenario::validate()
+{
+    /* Checking for uniq identifiers */
+    const string &map_id = m_source.get_id();
 
+    for (auto &o : m_objects)
+        for (auto &e : m_events)
+        {
+            auto &o_id = o->get_id();
+            auto &e_id = e->get_id();
+
+            if (o_id == e_id)
+                throw game_error("Found identical identifiers \"" + o_id + "\" in the structures \"objects\" and \"events\".");
+            else if (e_id == map_id)
+                throw game_error("Found identical identifiers \"" + map_id + "\" in the structures \"maps\" and \"events\".");
+            else if (map_id == o_id)
+                throw game_error("Found identical identifiers \"" + map_id + "\" in the structures \"maps\" and \"objects\".");
+        }
+}

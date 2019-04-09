@@ -41,20 +41,33 @@ typedef struct yaml_document_s yaml_document_t;
 
 class Event;
 
-struct Button {
+class Button {
 
-    Button() {}
-
-    Button(const string &label_,
-           const Commands &commands_)
-        : label(label_),
-          commands(commands_) {}
-
-    string label;
-    Commands commands;
+    string m_label;
+    Commands m_commands;
 
     /* Pointer to base event */
-    Event *event = nullptr;
+    const Event *m_event = nullptr;
+
+public:
+    Button() {}
+
+    Button(const string &label,
+           const Commands &commands)
+        : m_label(label),
+          m_commands(commands) {}
+
+    string &get_label()
+    { return m_label; }
+
+    const Event *get_event()
+    { return m_event; }
+
+    Commands &get_commands()
+    { return m_commands; }
+
+    void set_event(const Event *event)
+    { m_event = event; }
 };
 
 using Buttons = vector<Button>;
@@ -97,6 +110,10 @@ public:
 
     static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
     static void push_button(Arg button_ptr);
+
+    Commands&  get_commands();
+    Buttons&   get_buttons();
+    Conditions get_conditions();
 
     /* If the check is successful, then execute actions */
     void test();

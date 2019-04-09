@@ -75,6 +75,7 @@ class Scenario {
     void parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc);
     void parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc);
 
+    void validate();
 public:    
 
     Scenario(const string &f, int l, int c);

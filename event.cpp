@@ -81,8 +81,8 @@ void Event::test()
             vector<W::Menu> menu;
 
             for (auto &b : m_buttons) {
-                b.event = this;
-                menu.emplace_back( W::Menu(b.label, ActionAV(push_button, Arg(&b))));
+                b.set_event(this);
+                menu.emplace_back( W::Menu(b.get_label(), ActionAV(push_button, Arg(&b))));
             }
 
             auto wptr = W::push( W::Builder(m_position, menu, hooks.at(Hooks::event_dialog), m_message, m_title) );
@@ -99,7 +99,7 @@ void Event::push_button(Arg button_ptr)
     auto button = reinterpret_cast<Button *>(button_ptr);
 
     /* Execute commands assigned to the button */
-    button->event->m_scenario.parse_commands(button->commands);
+    button->get_event()->m_scenario.parse_commands(button->get_commands());
 }
 
 void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Commands &cmds)
@@ -158,9 +158,9 @@ void parse_buttons_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Butt
              const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
             if (!strcmp("label", key)) {
-                parse_string_from_yaml(node_value, butt.label);
+                parse_string_from_yaml(node_value, butt.get_label());
             } else if (!strcmp("do", key)) {
-                parse_commands_from_yaml(node_value, doc, butt.commands);
+                parse_commands_from_yaml(node_value, doc, butt.get_commands());
             } else
                 throw game_error( string("Invalid field in event structure: \"") + key + "\"");
         }

@@ -21,7 +21,7 @@
 
 static void parse_commands_from_yaml  (const yaml_node_t *node, yaml_document_t *doc, Commands &cmds);
 static void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds);
-static void parse_items_from_yaml   (const yaml_node_t *node, yaml_document_t *doc, Items &butts);
+static void parse_items_from_yaml     (const yaml_node_t *node, yaml_document_t *doc, Items &items);
 static void parse_string_from_yaml    (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml  (const yaml_node_t *node, W::Position &p);
 
@@ -74,15 +74,18 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 
 void Event::test()
 {
-    if (m_scenario.parse_conditions(m_conditions)) {
+    if (m_scenario.parse_conditions(m_conditions.begin(), m_conditions.end()))
+    {
+        m_happened = true;
+
         if (m_message.empty()) {
             m_scenario.parse_commands(m_commands);
         } else {
             vector<W::Menu> menu;
 
             for (auto &b : m_items) {
-                b.set_event(this);
-                menu.emplace_back( W::Menu(b.get_label(), ActionAV(push_item, Arg(&b))));
+                b.event = this;
+                menu.emplace_back( W::Menu(b.label, ActionAV(selected, Arg(&b))));
             }
 
             auto wptr = W::push( W::Builder(m_position, menu, hooks.at(Hooks::event_dialog), m_message, m_title) );
@@ -94,12 +97,12 @@ void Event::test()
     }
 }
 
-void Event::push_item(Arg item_ptr)
+void Event::selected(Arg item_ptr)
 {
     auto item = reinterpret_cast<Item *>(item_ptr);
 
     /* Execute commands assigned to the item */
-    item->get_event()->m_scenario.parse_commands(item->get_commands());
+    item->event->m_scenario.parse_commands(item->commands);
 }
 
 void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Commands &cmds)
@@ -132,7 +135,7 @@ void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, C
     }
 }
 
-void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items &butts)
+void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items &items)
 {
     if (node->type != YAML_SEQUENCE_NODE)
         throw game_error("Incorrectly set \"press\" struct in the event structure.");
@@ -144,8 +147,8 @@ void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items 
         if (seq_value->type != YAML_MAPPING_NODE)
             throw game_error("Incorrectly set \"press\" struct in the event structure.");
 
-        butts.push_back(Item());
-        auto &butt = butts.back();
+        items.push_back(Item());
+        auto &item = items.back();
 
         for (auto b = seq_value->data.mapping.pairs.start; b < seq_value->data.mapping.pairs.top; ++b)
         {
@@ -158,9 +161,9 @@ void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items 
              const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
             if (!strcmp("label", key)) {
-                parse_string_from_yaml(node_value, butt.get_label());
+                parse_string_from_yaml(node_value, item.label);
             } else if (!strcmp("do", key)) {
-                parse_commands_from_yaml(node_value, doc, butt.get_commands());
+                parse_commands_from_yaml(node_value, doc, item.commands);
             } else
                 throw game_error( string("Invalid field in event structure: \"") + key + "\"");
         }

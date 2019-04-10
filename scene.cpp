@@ -205,13 +205,8 @@ void Scenario::turn()
 
     render();
 
-    for (auto iter = m_events.begin(); iter != m_events.end(); ++iter) {
+    for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
         (*iter)->test();
-
-        /* Remove event if its pointer equal to null */
-        if (iter->get() == nullptr)
-            iter = m_events.erase(iter);
-    }
 }
 
 void Scenario::render()
@@ -229,7 +224,7 @@ list<shared_ptr<Object>>::iterator Scenario::get_object(const string& id)
 {
     for (auto iter = m_objects.begin(); iter != m_objects.end(); ++iter)
     {
-        if ((*iter)->get_id() == id)
+        if ((*iter)->id() == id)
             return iter;
     }
     return m_objects.end();
@@ -239,7 +234,7 @@ list<shared_ptr<Event>>::iterator Scenario::get_event(const string& id)
 {
     for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
     {
-        if ((*iter)->get_id() == id)
+        if ((*iter)->id() == id)
             return iter;
     }
     return m_events.end();
@@ -309,6 +304,8 @@ bool Scenario::parse_condition(const string& cond)
         auto event = get_event(id);
         if (event != m_events.end())
         {
+            if (method == "happened")
+                return event->get()->happened();
 
             return false;
         }
@@ -357,34 +354,29 @@ void Scenario::parse_command(const string& comm)
         if (event != m_events.end())
         {
 
-            /* Don't call erase, because we need to save
-             * pointers to the next and previous node
-             * (it will be anyway erased if contains null)
-             */
-
-            if (method == "destroy")
-               event->reset();
-            return;
         }                
     }
 }
 
-bool Scenario::parse_conditions(const vector<string> &conditions)
+bool Scenario::parse_conditions(const vector<string>::iterator &begin, const vector<string>::iterator &end)
 {
     bool result = 0;
     bool and_sequence = 1;
 
-    for (auto &f : conditions) {
-        if (f == "or") {
+    for (auto i = begin; i != end; ++i)
+    {
+        if (*i == "or") {
             result += and_sequence;
             and_sequence = 1;
+            continue;
         }
-        else
-            and_sequence *= parse_condition(f);
+        bool condition;
+        condition = ((*i).back() == '!')?
+                    !parse_condition(*i) : parse_condition(*i);
+        and_sequence *= condition;
     }
 
     result += and_sequence;
-
     return result;
 }
 

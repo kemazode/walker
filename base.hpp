@@ -26,7 +26,7 @@ class Base {
 public:
     Base(const string &id) : m_id(id) {}
 
-    const string& get_id() const
+    const string& id() const
     { return m_id; }
 };
 

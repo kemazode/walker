@@ -94,7 +94,7 @@ public:
     bool parse_condition(const string& cond);
     void parse_command  (const string& comm);
 
-    bool parse_conditions(const vector<string> &conditions);
+    bool parse_conditions(const vector<string>::iterator &begin, const vector<string>::iterator &end);
     void parse_commands  (const vector<string> &commands);
 };
 

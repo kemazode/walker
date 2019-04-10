@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <forward_list>
+#include <variant>
 
 #include "utils.hpp"
 #include "ui.hpp"
@@ -28,6 +29,7 @@
 using std::forward_list;
 using std::vector;
 using std::string;
+using std::variant;
 
 using Conditions = vector<string>;
 using Commands = vector<string>;
@@ -38,33 +40,12 @@ typedef struct yaml_document_s yaml_document_t;
 class Scenario;
 class Event;
 
-class Item {
-
-    string m_label;
-    Commands m_commands;
+struct Item {
+    string label;
+    Commands commands;
 
     /* Pointer to base event */
-    const Event *m_event = nullptr;
-
-public:
-    Item() {}
-
-    Item(const string &label,
-           const Commands &commands)
-        : m_label(label),
-          m_commands(commands) {}
-
-    string &get_label()
-    { return m_label; }
-
-    const Event *get_event()
-    { return m_event; }
-
-    Commands &get_commands()
-    { return m_commands; }
-
-    void set_event(const Event *event)
-    { m_event = event; }
+    const Event *event = nullptr;
 };
 
 using Items = vector<Item>;
@@ -72,7 +53,7 @@ using Items = vector<Item>;
 class Event : public Base {
 
     Conditions  m_conditions;
-    Items     m_items;
+    Items       m_items;
     Commands    m_commands;
     string      m_message;
     string      m_title;
@@ -80,37 +61,23 @@ class Event : public Base {
 
     Scenario &m_scenario;
 
-public:
+    bool m_happened;
+
     Event(const string &id, Scenario &scene) :
         Base(id),
-        m_scenario(scene)
+        m_scenario(scene),
+        m_happened(false)
     {}
 
-    Event(const string &id,
-          const Conditions &conds,
-          const Items &butts,
-          const Commands &cmds,
-          const string &msg,
-          const string &title,
-          const W::Position& pos,
-          Scenario &scene)
-        :
-          Base(id),
-          m_conditions(conds),
-          m_items(butts),
-          m_commands(cmds),
-          m_message(msg),
-          m_title(title),
-          m_position(pos),
-          m_scenario(scene)
-    {}
-
-
-    static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
-    static void push_item(Arg item_ptr);
+public:
 
     /* If the check is successful, then execute actions */
     void test();
+    bool happened()
+    { return m_happened; }
+
+    static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
+    static void selected(Arg item_ptr);
 };
 
 #endif // EVENT_HPP

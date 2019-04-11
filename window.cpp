@@ -1,20 +1,23 @@
 /* This file is part of Walker.
- * 
+ *
  * Walker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Walker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <cstdlib>
+
 #include "window.hpp"
+#include "utils.hpp"
 
 #define LINES_BORDERS 2
 #define COLS_BORDERS 2
@@ -25,265 +28,334 @@
 #define ITEM_DESCRIPTION " "
 #define ITEM_SELECT " > "
 
-static int text_height(const Text &t, int freecols);
-static int waddtext(WINDOW *w, const Text &t);
-static int waddcchar(WINDOW *w, const cchar &t);
+static int text_height(const struct text *t, int freecols);
+static int waddtext(WINDOW *w, const struct text *t);
+static int waddcchar(WINDOW *w, const struct cchar *t);
+
+static int items_count(struct item *);
+static int hooks_count(struct hook *);
 
 #define mvwaddtext(win,y,x,t) \
     (wmove((win),(y),(x)) == ERR ? ERR : waddtext((win),(t)))
 
-Window *Window::topw      = nullptr;
+struct window {
+    PANEL  *panel;
+    WINDOW *window;
+    WINDOW *sub_window_text;
+    WINDOW *sub_window_menu;
+    MENU   *menu;
+    ITEM   **items;
 
-Window::Window(const Builder &c)
-{    
-    m_pos = c.p;
+    int items_c;
+    int hooks_c;
 
-    auto location = get_location(m_pos);
+    enum position position;
+    struct hook *hooks;
+};
 
-    m_win = newwin(location.lines + LINES_BORDERS,
-                   location.cols + COLS_BORDERS,
-                   location.y,
-                   location.x);
+static struct window *top_window = nullptr;
+
+window *window_push(const struct builder &builder)
+{
+    struct window *new_w = new window;
+    struct location loc_w = window_get_location(builder.position);
+
+    new_w->position = builder.position;
+    new_w->window   = newwin(loc_w.lines + LINES_BORDERS,
+                             loc_w.cols + COLS_BORDERS,
+                             loc_w.y,
+                             loc_w.x);
 
     /* Set window decorations */
-    wattron(m_win, PAIR(MYCOLOR, COLOR_BLACK));
+    wattron(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
 
-    if (not (c.o & borderless))
-        box(m_win, 0, 0);
+    if ( !(builder.options & OPTION_BORDERLESS))
+        box(new_w->window, 0, 0);
 
     /* Window title */
-    if (!c.title.empty())
+    if (builder.title.lenght)
     {
-        wattron(m_win, A_REVERSE);
-        wmove(m_win, 0, location.cols/2 - int(c.title.len)/2);
-        waddstr(m_win, TITLE_SEPARATION);
-        waddtext(m_win, c.title);
-        waddstr(m_win, TITLE_SEPARATION);
-        wattroff(m_win, A_REVERSE);
+        wattron(new_w->window, A_REVERSE);
+        wmove(new_w->window, 0, loc_w.cols/2 - int(builder.title.lenght/2));
+        waddstr(new_w->window, TITLE_SEPARATION);
+        waddtext(new_w->window, &builder.title);
+        waddstr(new_w->window, TITLE_SEPARATION);
+        wattroff(new_w->window, A_REVERSE);
     }
 
-    wattroff(m_win, PAIR(MYCOLOR, COLOR_BLACK));
+    wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
 
     int nextline = SUB_WIN_Y;
 
-    if (!c.t.empty())
+    if (builder.text.lenght)
     {
-        int text_h = text_height(c.t, location.cols - 2*TEXT_X);
+        int text_h = text_height(&builder.text, loc_w.cols - 2*TEXT_X);
 
         /* Text drawing */
-        m_sub_t = derwin(m_win, text_h, location.cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
-        mvwaddtext(m_sub_t, 0, 0, c.t);
+        new_w->sub_window_text = derwin(new_w->window, text_h, loc_w.cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
+        mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text);
 
         nextline += text_h;
     } else
-        m_sub_t = nullptr;
+        new_w->sub_window_text = nullptr;
 
     ++nextline;
 
-    if (!c.m.empty())
-    {        
+    if (builder.items)
+    {
         /* Menu subwin creating */
-        int menu_h = (int(c.m.size()) < location.lines- nextline)? int(c.m.size()): location.lines- nextline;
+        new_w->items_c = items_count(builder.items);
 
-        m_sub_m = derwin(m_win, menu_h, location.cols, nextline, SUB_WIN_X);
+        int menu_h = (new_w->items_c < loc_w.lines - nextline)?
+                      new_w->items_c : loc_w.lines - nextline;
+
+        new_w->sub_window_menu = derwin(new_w->window, menu_h, loc_w.cols, nextline, SUB_WIN_X);
 
         /* Create items from Menu* m */
-        m_items = new ITEM *[c.m.size() + 1];
+        new_w->items = new ITEM *[size_t(new_w->items_c) + 1];
 
-        for (size_t i = 0; i < c.m.size(); ++i)
+        for (int i = 0; i < new_w->items_c; ++i)
         {
-            m_items[i] = new_item(c.m[i].label.c_str(), ITEM_DESCRIPTION);
+            new_w->items[i] = new_item(builder.items[i].label, ITEM_DESCRIPTION);
 
             /* If item doesn't have any function */
-            if (c.m[i].act.empty())
-                item_opts_off(m_items[i], O_SELECTABLE);
+            if (builder.items[i].action.function == nullptr)
+                item_opts_off(new_w->items[i], O_SELECTABLE);
             else
-                m_items[i]->userptr = &c.m[i];
+                set_item_userptr(new_w->items[i], &builder.items[i]);
         }
 
-        m_items[c.m.size()] = nullptr;
+        new_w->items[new_w->items_c] = nullptr;
 
         /* Link menu & window */
-        m_menu = new_menu(m_items);
-        set_menu_win(m_menu, m_win);
-        set_menu_sub(m_menu, m_sub_m);
+        new_w->menu = new_menu(new_w->items);
+        set_menu_win(new_w->menu, new_w->window);
+        set_menu_sub(new_w->menu, new_w->sub_window_menu);
 
         /* For menu scrolling */
-        set_menu_format(m_menu, menu_h, 1);
+        set_menu_format(new_w->menu, menu_h, 1);
 
         /* Set menu decorations */
-        set_menu_mark(m_menu, ITEM_SELECT);
-        set_menu_grey(m_menu, A_DIM);
-        set_menu_fore(m_menu, PAIR(MYCOLOR, COLOR_BLACK)|A_BOLD);
-        set_menu_back(m_menu, PAIR(COLOR_WHITE, COLOR_BLACK));
+        set_menu_mark(new_w->menu, ITEM_SELECT);
+        set_menu_grey(new_w->menu, A_DIM);
+        set_menu_fore(new_w->menu, PAIR(MYCOLOR, COLOR_BLACK)|A_BOLD);
+        set_menu_back(new_w->menu, PAIR(COLOR_WHITE, COLOR_BLACK));
 
         /* Attaching */
-        post_menu(m_menu);
+        post_menu(new_w->menu);
 
     } else {
-        m_menu  = nullptr;
-        m_items = nullptr;
-        m_sub_m = nullptr;
+        new_w->menu  = nullptr;
+        new_w->items = nullptr;
+        new_w->sub_window_menu = nullptr;
     }
 
     /* Set hooks */
-    m_hooks = &c.h;
+    new_w->hooks   = builder.hooks;
+    new_w->hooks_c = hooks_count(new_w->hooks);
 
     /* Panel creation */
-    m_pan = new_panel(m_win);
-    set_panel_userptr(m_pan, this);
-    topw = this;
+    new_w->panel = new_panel(new_w->window);
+    set_panel_userptr(new_w->panel, new_w);
+    top_window = new_w;
 
-    _refresh();
-    update_panels();    
-}
-
-Window::~Window()
-{
-    /* Set the top window */
-    auto pan_ptr = panel_below(topw->m_pan);
-
-
-    if (pan_ptr)
-        topw = reinterpret_cast<Window *>(const_cast<void *>(panel_userptr(pan_ptr)));
-    else
-        topw = nullptr;
-
-    if (m_menu) {
-        unpost_menu(m_menu);
-        int n = item_count(m_menu);
-        free_menu(m_menu);
-        for (int i = 0; i < n; ++i)
-            free_item(m_items[i]); 
-        free_item(m_items[n]);
-    }
-
-    delete [] m_items;
-    del_panel(m_pan);
-    delwin(m_sub_m);
-    delwin(m_sub_t);
-    delwin(m_win);
-
+    window_refresh();
     update_panels();
 
-    refresh();
+    return top_window;
 }
 
-void Window::_refresh() const
+void window_pop()
 {
-    wnoutrefresh(this->m_sub_t);
-    wnoutrefresh(this->m_sub_m);
-    wnoutrefresh(this->m_win);
+    /* Set the top window */
+    if (!top_window) return;
+
+    PANEL *panel_b = panel_below(top_window->panel);
+    struct window *new_top_window = nullptr;
+
+    if (panel_b)
+        /* set_panel_userptr takes userprt as "const void *",
+         * so if we want to get userptr for changing we need to reset const qualifier.
+         */
+        new_top_window = (struct window *) panel_userptr(panel_b);
+
+    if (top_window->menu) {
+        unpost_menu(top_window->menu);
+        int n = item_count(top_window->menu);
+        free_menu(top_window->menu);
+        for (int i = 0; i < n; ++i)
+            free_item(top_window->items[i]);
+        free_item(top_window->items[n]);
+    }
+
+    free(top_window->items);
+    del_panel(top_window->panel);
+    delwin(top_window->sub_window_menu);
+    delwin(top_window->sub_window_text);
+    delwin(top_window->window);
+    free(top_window);
+
+    top_window = new_top_window;
+
+    update_panels();
+    window_refresh();
+}
+
+void window_refresh()
+{
+    if (!top_window) return;
+
+    wnoutrefresh(top_window->sub_window_text);
+    wnoutrefresh(top_window->sub_window_menu);
+    wnoutrefresh(top_window->window);
     doupdate();
 }
 
-void Window::_menu_driver(int act) const
+void window_menu_driver(int req)
 {
-    Menu *temp = static_cast<Menu *>(item_userptr(current_item(m_menu)));
-    switch (act) {
+    if (!top_window) return;
+
+    struct item *item = (struct item *) item_userptr(current_item(top_window->menu));
+    switch (req) {
     case REQ_EXEC_ITEM:
-        if (temp)
-            temp->act();
+        if (item) item->action.function(item->action.arg);
         return;
     }
 
-    ::menu_driver(m_menu, act);
-    _refresh();
+    menu_driver(top_window->menu, req);
+    window_refresh();
 }
 
-void Window::_hook() const
-{    
+void window_hook()
+{
+    if (!top_window) return;
+
+    struct window *cur = top_window;
+
     int key = getch();
-    for (const auto &h : *m_hooks)
-        if (h.key == key)
-            h.act();
+
+    /* "cur &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон */
+    for (int i = 0; cur && i < cur->hooks_c; ++i)
+        if (cur->hooks[i].key == key)
+            cur->hooks[i].action.function(cur->hooks[i].action.arg);
 }
 
-/* It reserves the entire space of the window panes to the text, if there is no menu */
-void Window::_print(const vector<Text> &vt, int x, int y)
-{    
-    if (vt.empty() || m_sub_m) return;
+void window_print(const vector<text> &vec, int x, int y)
+{
+    if (vec.empty() || !top_window) return;
 
-    int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
+    int text_h = top_window->sub_window_text? getmaxy(top_window->sub_window_text) - getbegy(top_window->sub_window_text) + 1 : 0;
 
-    auto location = get_location(m_pos);
+    struct location loc_w = window_get_location();
 
-    int xend = x + location.cols;
-    int yend = y + location.lines;
+    int xend = x + loc_w.cols;
+    int yend = y + loc_w.lines;
 
-    if (cth != location.lines) {
-        if (m_sub_t)
-            wresize(m_sub_t, location.lines, location.cols);
+    if (text_h != loc_w.lines) {
+        if (top_window->sub_window_text)
+            wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
         else
-            m_sub_t = derwin(m_win, location.lines, location.cols, SUB_WIN_Y, SUB_WIN_X);
+            top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, SUB_WIN_Y, SUB_WIN_X);
     }
 
-    wmove(m_sub_t, 0, 0);
+    wmove(top_window->sub_window_text, 0, 0);
 
 
-    int h = int(vt.size());
-    int w = int(vt.at(0).len);
+    int h = int(vec.size());
+    int w = int(vec.at(0).lenght);
 
-    for (auto i = y; i < yend; ++i)
-        for (auto j = x; j < xend; ++j)
+    /* Double array is limited to NULL "strcut text *" */
+    for (int i = y; i < yend; ++i)
+        for (int j = x; j < xend; ++j)
         {
             if (i >= h || j >= w) {
-                waddch(m_sub_t, '\n');
+                waddch(top_window->sub_window_text, '\n');
                 break;
             }
-            waddcchar(m_sub_t, vt.at(size_t(i)).text[j]);
+            waddcchar(top_window->sub_window_text, &vec.at(size_t(i)).cstr[j]);
         }
 
-    _refresh();
+    window_refresh();
 }
 
-void Window::_print(const Text &t)
+void window_print(const struct text *text)
 {
-    auto location = get_location(m_pos);
+    if (!top_window) return;
 
-    int cth = m_sub_t? getmaxy(m_sub_t) - getbegy(m_sub_t) + 1 : 0;
-    int th = text_height(t, location.cols - 2*TEXT_X);
+    struct location loc_w = window_get_location();
+    int cth = top_window->sub_window_text?
+                getmaxy(top_window->sub_window_text) - getbegy(top_window->sub_window_text) + 1
+              : 0;
+    int th  = text_height(text, loc_w.cols - 2*TEXT_X);
 
     if (th != cth) {
-        if (m_sub_m) {
+        if (top_window->sub_window_menu) {
 
-            int it_c = item_count(m_menu);
-            int menu_h = (it_c < location.lines - th - 1)? it_c : location.lines - th - 1;
+            int it_c = item_count(top_window->menu);
+            int menu_h = (it_c < loc_w.lines - th - 1)? it_c : loc_w.lines - th - 1;
 
-            unpost_menu(m_menu);
+            unpost_menu(top_window->menu);
 
-            delwin(m_sub_m);
+            delwin(top_window->sub_window_menu);
 
-            m_sub_m = derwin(m_win, menu_h,
-                             location.cols, th + SUB_WIN_Y + 1,
+            top_window->sub_window_menu = derwin(top_window->window, menu_h,
+                             loc_w.cols, th + SUB_WIN_Y + 1,
                              SUB_WIN_X);
 
-            set_menu_win(m_menu, m_win);
-            set_menu_sub(m_menu, m_sub_m);
-            post_menu(m_menu);
+            set_menu_win(top_window->menu, top_window->window);
+            set_menu_sub(top_window->menu, top_window->sub_window_menu);
+            post_menu(top_window->menu);
         }
 
-        if (m_sub_t) {
-            wresize(m_sub_t, th, location.cols);
+        if (top_window->sub_window_text) {
+            wresize(top_window->sub_window_text, th, loc_w.cols);
         } else {
-            m_sub_t = derwin(m_win, th, location.cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
-            wclear(m_sub_t);
+            top_window->sub_window_text = derwin(top_window->window, th, loc_w.cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
+            wclear(top_window->sub_window_text);
         }
     }
 
-    mvwaddtext(m_sub_t, 0, 0, t);
+    mvwaddtext(top_window->sub_window_text, 0, 0, text);
     refresh();
 }
 
-int text_height(const Text &t, int freecols)
+void window_set(const struct builder &builder)
 {
+    window_clear();
+    window_push(builder);
+}
+
+void window_clear(void)
+{
+    while(top_window)
+        window_pop();
+}
+
+bool window_has(struct window *window)
+{
+    const struct window *temp = top_window;
+
+    while (temp)
+        if (temp == window)
+            return true;
+        else
+            temp = (const struct window *) panel_userptr(panel_below(temp->panel));
+
+    return false;
+}
+
+struct window *window_top(void)
+{ return top_window; }
+
+int text_height(const struct text *t, int freecols)
+{
+    if (!t) return 0;
+
     size_t old = 0;
     int text_height = 1, templen;
 
-    if (t.empty()) return 0;
-
-    for (size_t i = 0; i < t.len; ++i)
-        if (t.text[i].c == '\n')
+    for (size_t i = 0; i < t->lenght; ++i)
+        if (t->cstr[i].symbol == '\n')
         {
             templen = int(i) - int(old);
 
@@ -291,43 +363,68 @@ int text_height(const Text &t, int freecols)
             old = i + 1;
         }
 
-    templen = int(t.len) - int(old);
+    templen = int(t->lenght) - int(old);
 
     text_height += (templen - 1) / freecols;
 
     return text_height;
 }
 
-int waddtext(WINDOW *w, const Text &t)
+int waddtext(WINDOW *w, const struct text *t)
 {
     int rc = OK;
-    for (size_t i = 0; i < t.len; ++i)
-        rc = waddcchar(w, t.text[i]);
+    for (size_t i = 0; i < t->lenght; ++i)
+        rc = waddcchar(w, &t->cstr[i]);
     return rc;
 }
 
-int waddcchar(WINDOW *w, const cchar &t)
+int waddcchar(WINDOW *w, const struct cchar *t)
 {
     int rc = OK;
 
-    if (t.attr & A_INVIS)
+    if (t->attribute & A_INVIS)
         return rc = waddch(w, ' ');
 
-    wattron(w, t.attr);
-    rc = waddch(w, chtype(t.c));
-    wattroff(w, t.attr);
+    wattron(w, t->attribute);
+    rc = waddch(w, chtype(t->symbol));
+    wattroff(w, t->attribute);
     return rc;
 }
 
-Window::Location Window::get_location(Position p)
+struct location window_get_location(enum position p)
 {
     switch (p) {
-    case full:  return Location{0, 0, LINES - LINES_BORDERS, COLS - COLS_BORDERS};
-    case aver:  return Location{COLS/8, LINES/8, LINES - LINES/4 - LINES_BORDERS, COLS - COLS/4 - COLS_BORDERS};
-    case small: return Location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
-    case game: return get_location(full);
-    case stat: return get_location(aver);
-    case log:  return get_location(aver);
+    case POSITION_FULL:  return location{0, 0, LINES - LINES_BORDERS, COLS - COLS_BORDERS};
+    case POSITION_AVERAGE:  return location{COLS/8, LINES/8, LINES - LINES/4 - LINES_BORDERS, COLS - COLS/4 - COLS_BORDERS};
+    case POSITION_SMALL: return location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
     }
-    return Location{0, 0, 0, 0};
+    return location{0, 0, 0, 0};
+}
+
+struct location window_get_location(void)
+{
+    return window_get_location(top_window->position);
+}
+
+static int items_count(struct item *i)
+{
+    if (!i) return 0;
+    int count = 0;
+    while (i->label ||
+           i->action.arg != 0 ||
+           i->action.function != nullptr)
+    { ++count; ++i;}
+
+    return count;
+}
+
+static int hooks_count(struct hook *h)
+{
+    if (!h) return 0;
+    int count = 0;
+    while (h->key != 0 ||
+           h->action.arg != 0 ||
+           h->action.function != nullptr)
+    { ++count; ++h; }
+    return count;
 }

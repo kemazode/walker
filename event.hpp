@@ -57,7 +57,7 @@ class Event : public Base {
     Commands    m_commands;
     string      m_message;
     string      m_title;
-    W::Position m_position;
+    position    m_position;
 
     Scenario &m_scenario;
 
@@ -77,7 +77,7 @@ public:
     { return m_happened; }
 
     static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
-    static void selected(Arg item_ptr);
+    static void selected(arg_t item_ptr);
 };
 
 #endif // EVENT_HPP

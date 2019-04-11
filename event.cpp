@@ -23,7 +23,7 @@ static void parse_commands_from_yaml  (const yaml_node_t *node, yaml_document_t 
 static void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds);
 static void parse_items_from_yaml     (const yaml_node_t *node, yaml_document_t *doc, Items &items);
 static void parse_string_from_yaml    (const yaml_node_t *node, string &msg);
-static void parse_position_from_yaml  (const yaml_node_t *node, W::Position &p);
+static void parse_position_from_yaml  (const yaml_node_t *node, position p);
 
 /* Dynamic alloc */
 Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene)
@@ -31,7 +31,7 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
     auto event = new Event(id, scene);
 
     event->m_title = "Event";
-    event->m_position = W::small;
+    event->m_position = POSITION_SMALL;
 
     if (!node)
         throw game_error("Empty map structure.");
@@ -81,23 +81,28 @@ void Event::test()
         if (m_message.empty()) {
             m_scenario.parse_commands(m_commands);
         } else {
-            vector<W::Menu> menu;
+            shared_ptr<item[]> menu(new item[m_items.size() + 1]);
 
-            for (auto &b : m_items) {
-                b.event = this;
-                menu.emplace_back( W::Menu(b.label, ActionAV(selected, Arg(&b))));
+            for (size_t i = 0; i < m_items.size(); ++i) {
+                m_items[i].event = this;
+                menu.get()[i] =
+                {
+                  m_items[i].label.c_str(),
+                  { selected, arg_t(&m_items[i]) }
+                };
             }
+            menu.get()[m_items.size()] = {};
 
-            auto wptr = W::push( W::Builder(m_position, menu, hooks.at(Hooks::event_dialog), m_message, m_title) );
+            window *wptr = window_push( builder(m_position, menu.get(), hooks[HOOKS_EVENT_DIALOG], m_message, m_title) );
 
             /* While wptr is exist, menu must not be destroyed */
-            while (W::has(wptr))
-                W::hook();
+            while (window_has(wptr))
+                window_hook();
         }
     }
 }
 
-void Event::selected(Arg item_ptr)
+void Event::selected(arg_t item_ptr)
 {
     auto item = reinterpret_cast<Item *>(item_ptr);
 
@@ -179,7 +184,7 @@ static void parse_string_from_yaml(const yaml_node_t *node, string &msg)
     msg = value;
 }
 
-static void parse_position_from_yaml(const yaml_node_t *node, W::Position &p)
+static void parse_position_from_yaml(const yaml_node_t *node, position p)
 {
     if (node->type != YAML_SCALAR_NODE)
         throw game_error("Incorrectly \"position\" field in the event structure.");
@@ -187,11 +192,11 @@ static void parse_position_from_yaml(const yaml_node_t *node, W::Position &p)
    const char *value = reinterpret_cast<const char *>(node->data.scalar.value);
 
    if (!strcmp(value, "Small")) {
-       p = W::small;
+       p = POSITION_SMALL;
    } else if (!strcmp(value, "Average")) {
-       p = W::aver;
+       p = POSITION_AVERAGE;
    } else if (!strcmp(value, "Full")) {
-       p = W::full;
+       p = POSITION_FULL;
    } else
        throw game_error(string("Invalid position value \"") + value + "\" in the event structure.");
 }

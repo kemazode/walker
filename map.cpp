@@ -61,7 +61,7 @@ void Map::push(const string &s)
                          ") does not match the specified length (" +
                          to_string(m_width) + ").");
     ++m_height;
-    m_strs.emplace_back(s);
+    m_lines.emplace_back(s);
 }
 
 Map::Map(const string &id, const string &map, int w, int h) : Base(id)
@@ -126,9 +126,8 @@ void Map::decorate()
 {
     char temp;
     try {
-        for (auto& t : m_strs)
-            for (auto& c : t)
-                c.attr = map_attrs.at(temp = c.c);
+        for (auto& line : m_lines) for (size_t i = 0; i < line.lenght; ++i)
+          line.cstr[i].attribute = map_attrs.at(temp = line.cstr[i].symbol);
 
     } catch (std::out_of_range &) {
         throw game_error( string("Sorry, but file has incorrect symbol '") + temp + "'.");

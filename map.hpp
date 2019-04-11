@@ -17,7 +17,7 @@ class Map  : public Base {
     int m_x, m_y;
 
     int m_width, m_height;
-    vector<Text> m_strs;
+    vector<text> m_lines;
 
 public:
 
@@ -29,16 +29,16 @@ public:
   static string generate(int w, int h);
 
   inline cchar& at(int x, int y)
-  { return m_strs.at( vector<Text>::size_type(y) ).at( size_t(x) ); }
+  { return m_lines.at( vector<text>::size_type(y) ).cstr[x]; }
 
   void push(const string &s);
   void decorate();
 
-  const vector<Text>& gettexts() const
-  { return m_strs; }
+  const vector<text>& gettexts() const
+  { return m_lines; }
 
-  vector<Text>& gettexts()
-  { return m_strs; }
+  vector<text>& gettexts()
+  { return m_lines; }
 
   int width() const
   { return m_width; }

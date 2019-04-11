@@ -16,105 +16,131 @@
 
 #include "ui.hpp"
 
-static inline void w_push       (Arg);
-static inline void w_set        (Arg);
-static inline void w_menu_driver(Arg);
-
-vector<vector<W::Menu>> menus =
+static item menu_main[] =
 {
-    // Menu::null
-    {},
-
-    { // Menu::main
-      W::Menu("Start New Game", scenario_load),
-      W::Menu("Create Map",     ActionAV(w_push, Builder::map_creator)),
-      W::Menu("Scoreboard"),
-      W::Menu("Options"),
-      W::Menu("Exit",           W::clear),
-    },
-
-    { // Menu::game
-      W::Menu("Continue",       W::pop),
-      W::Menu("Exit",           ActionAV(w_set, Builder::main)),
-    },
-
-    { // Menu::okay
-      W::Menu("OK",            W::pop),
-    },
-
-    { // Menu::create
-      W::Menu("Generate",      ActionAV(w_push, Builder::map_sizes)),
-    },
-
-    { // Menu::map_sizes
-      W::Menu("100x100", ActionAV(scenario_generate, 100)),
-      W::Menu("250x250", ActionAV(scenario_generate, 250)),
-      W::Menu("500x500", ActionAV(scenario_generate, 500)),
-    },
+  item("Start New Game", {fun_t(scenario_load), 0}),
+  item("Create Map",     {window_push, BUILD_MAP_CREATOR}),
+  item("Scoreboard"),
+  item("Options"),
+  item("Exit",           {fun_t(window_clear), 0}),
+  {nullptr, {nullptr , 0}}
 };
 
-vector<vector<W::Hook>> hooks =
+static item menu_game[] =
 {
-    // Hooks::null
-    {},
-
-    { // Hooks::main
-      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
-      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
-      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM))
-    },
-
-    { // Hooks::game
-      W::Hook('Q',       ActionAV(w_push, Builder::game_menu)),
-      W::Hook('q',       ActionAV(w_push, Builder::game_menu)),
-
-      // Player moving
-      W::Hook(KEY_DOWN,  ActionAV(scenario_move_player_y,  1)),
-      W::Hook(KEY_UP,    ActionAV(scenario_move_player_y, -1)),
-      W::Hook(KEY_LEFT,  ActionAV(scenario_move_player_x, -1)),
-      W::Hook(KEY_RIGHT, ActionAV(scenario_move_player_x,  1)),
-
-      // Map moving
-      W::Hook('k', ActionAV(scenario_move_view_y,  1)),
-      W::Hook('i', ActionAV(scenario_move_view_y, -1)),
-      W::Hook('j', ActionAV(scenario_move_view_x, -1)),
-      W::Hook('l', ActionAV(scenario_move_view_x,  1)),
-      W::Hook('K', ActionAV(scenario_move_view_y,  1)),
-      W::Hook('I', ActionAV(scenario_move_view_y, -1)),
-      W::Hook('J', ActionAV(scenario_move_view_x, -1)),
-      W::Hook('L', ActionAV(scenario_move_view_x,  1)),
-    },
-
-    { // Hooks::menu
-      W::Hook('q',      W::pop),
-      W::Hook('Q',      W::pop),
-      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
-      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
-      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM))
-    },
-    { // Hooks::event_dialog
-      W::Hook('\n',     ActionAV(w_menu_driver, REQ_EXEC_ITEM)),
-      W::Hook(KEY_DOWN, ActionAV(w_menu_driver, REQ_DOWN_ITEM)),
-      W::Hook(KEY_UP,   ActionAV(w_menu_driver, REQ_UP_ITEM)),
-    },
+  item("Continue",       {fun_t(window_pop), 0}),
+  item("Exit",           {window_set, BUILD_MAIN}),
+  {nullptr, {nullptr , 0}}
 };
 
-vector<W::Builder> builder =
+static item menu_okay[] =
 {
-    W::Builder(W::full,  menus[Menu::main],        hooks[Hooks::main], "Welcome!",             "Menu"),
-    W::Builder(W::game,  menus[Menu::null],        hooks[Hooks::game], Text(),                 "", W::borderless),
-    W::Builder(W::small, menus[Menu::game],        hooks[Hooks::menu], Text(),                 "Menu"),
-    W::Builder(W::small, menus[Menu::okay],        hooks[Hooks::menu], Text(),                 "Message"),
-    W::Builder(W::full,  menus[Menu::map_creator], hooks[Hooks::menu], "Create your own map.", "Map Creator"),
-    W::Builder(W::small, menus[Menu::map_sizes],   hooks[Hooks::menu], "Choose map size:",     "Map sizes"),
-    W::Builder(W::small, menus[Menu::okay],        hooks[Hooks::menu], Text(),                 "Error"),
+  item("OK",           {fun_t(window_pop), 0}),
+  {nullptr, {nullptr , 0}}
 };
 
-void w_set(Arg arg)
-{ W::set(builder[size_t(arg)]); }
+static item menu_map_creator[] =
+{
+  item("Generate",      {window_push, BUILD_MAP_SIZES}),
+  {nullptr, {nullptr , 0}}
+};
 
-void w_push(Arg arg)
-{ W::push(builder[size_t(arg)]); }
+static item menu_map_sizes[] =
+{
+  item("100x100", {scenario_generate, 100}),
+  item("250x250", {scenario_generate, 250}),
+  item("500x500", {scenario_generate, 500}),
+  {nullptr, {nullptr , 0}}
+};
 
-void w_menu_driver(Arg arg)
-{ W::menu_driver(int(arg)); }
+item *menus[] =
+{
+  menu_main,
+  menu_game,
+  menu_okay,
+  menu_map_creator,
+  menu_map_sizes,
+};
+
+static hook hooks_main[] =
+{
+  hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
+  hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
+  hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
+  {0, {nullptr, 0}}
+};
+
+static hook hooks_game[] =
+{
+  hook('Q',       {window_push, BUILD_GAME_MENU}),
+  hook('q',       {window_push, BUILD_GAME_MENU}),
+
+  // Player moving
+  hook(KEY_DOWN,  {scenario_move_player_y,  1}),
+  hook(KEY_UP,    {scenario_move_player_y, -1}),
+  hook(KEY_LEFT,  {scenario_move_player_x, -1}),
+  hook(KEY_RIGHT, {scenario_move_player_x,  1}),
+
+  // Map moving
+  hook('k', {scenario_move_view_y,  1}),
+  hook('i', {scenario_move_view_y, -1}),
+  hook('j', {scenario_move_view_x, -1}),
+  hook('l', {scenario_move_view_x,  1}),
+  hook('K', {scenario_move_view_y,  1}),
+  hook('I', {scenario_move_view_y, -1}),
+  hook('J', {scenario_move_view_x, -1}),
+  hook('L', {scenario_move_view_x,  1}),
+  {0, {nullptr, 0}}
+};
+
+static hook hooks_menu[] =
+{
+  hook('q',      {fun_t(window_pop), 0}),
+  hook('Q',      {fun_t(window_pop), 0}),
+  hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
+  hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
+  hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
+  {0, {nullptr, 0}}
+};
+static hook hooks_event_dialog[] =
+{
+  hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
+  hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
+  hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
+  {0, {nullptr, 0}}
+};
+
+hook *hooks[] =
+{
+  hooks_main,
+  hooks_game,
+  hooks_menu,
+  hooks_event_dialog,
+};
+
+static text descs[] =
+{
+  "Welcome!",
+  "Create your own map.",
+  "Select map size:"
+};
+
+static text titles[] =
+{
+  "Menu",
+  "Message",
+  "Map Creator",
+  "Map Sizes",
+  "Error",
+};
+
+builder build[] =
+{
+  builder(POSITION_FULL,  menus[MENU_MAIN],        hooks[HOOKS_MAIN], descs[DESC_MAIN],        titles[TITLE_MENU]),
+  builder(POSITION_FULL,  nullptr,                 hooks[HOOKS_GAME], nullptr,                 nullptr, OPTION_BORDERLESS),
+  builder(POSITION_SMALL, menus[MENU_GAME],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_MENU]),
+  builder(POSITION_SMALL, menus[MENU_OKAY],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_MESSAGE]),
+  builder(POSITION_FULL,  menus[MENU_MAP_CREATOR], hooks[HOOKS_MENU], descs[DESC_MAP_CREATOR], titles[TITLE_MAP_CREATOR]),
+  builder(POSITION_SMALL, menus[MENU_MAP_SIZES],   hooks[HOOKS_MENU], descs[DESC_MAP_SIZES],   titles[TITLE_MAP_SIZES]),
+  builder(POSITION_SMALL, menus[MENU_OKAY],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_ERROR]),
+};

@@ -45,135 +45,70 @@ using std::string;
 using std::runtime_error;
 using std::vector;
 
-using Arg = intptr_t;
+typedef intptr_t arg_t;
+typedef void (*fun_t)(arg_t);
 
-using Fa = void(*)(Arg);
-using Fv = void(*)();
+struct action
+{  
+  fun_t function;
+  arg_t arg;
 
-template<class F, class A>
-struct Action {
-    F (*f)(A);
-    A args;
-
-    Action() : f(nullptr) {}
-    Action(F (*f_)(A), A args_) : f(f_), args(args_) {}
-
-    bool empty()   const { return !f; }
-    F operator()() const { return f(args); }
+  bool empty() const
+  { return function == nullptr; }
+  void operator()() const
+  { function(arg); }
 };
 
-template <class F>
-struct Action<F, void> {
-    F (*f)();
-
-    Action() : f(nullptr) {}
-    Action(F (*f_)()) : f(f_) {}
-
-    bool empty()   const { return !f;  }
-    F operator()() const { return f(); }
+struct cchar
+{
+    char symbol;
+    attr_t attribute;
 };
 
-struct ActionAV {
-    ActionAV() : fa() {}
-    ActionAV(void (*fv_)()) : arg(0), fv(fv_) {}
-    ActionAV(void (*fa_)(Arg), Arg arg_) : arg(1), fa(fa_, arg_) {}
+struct text
+{
+  text(const char *str, attr_t attr) {
+    lenght = str? strlen(str) : 0;
+    cstr = new cchar[lenght];
+    
+    for (size_t i = 0; i < lenght; ++i) {
+        cstr[i].symbol    = str[i];
+        cstr[i].attribute = attr;
+      }
+  }
 
-    bool empty() const
-    { return fa.empty() and fv.empty(); }
+  text(const char *str)
+    : text(str, A_NORMAL) {}
 
-    void operator()() const
-    { arg? fa() : fv(); }
+  text(const string &str)
+    : text(str.c_str()) {}
 
-    bool arg;
-    union {
-        Action<void, Arg>  fa;
-        Action<void, void> fv;
-    };
-};
+  text(const text &t)
+  {
+    lenght = t.lenght;
+    cstr = new cchar[lenght];
+    for (size_t i = 0; i < lenght; ++i)
+      cstr[i] = t.cstr[i];
+  }
 
-struct cchar {
-    cchar() : c(0), attr(0) {}
-    cchar(char c_) : c(c_), attr(0) {}
-    cchar(char c_, attr_t a_) : c(c_), attr(a_) {}
+  text& operator=(const text &t)
+  {
+    if (this == &t) return *this;
 
-    /* s (symbol), c (color), a (attribute, not color) */
-    cchar& replace_sc(const cchar &cc)
-    {
-        c = cc.c;
-        attr &= ~COLOR_PAIR( PAIR_NUMBER(attr)    );
-        attr |=  COLOR_PAIR( PAIR_NUMBER(cc.attr) );
-        return *this;
-    }
+    lenght = t.lenght;
+    delete [] cstr;
 
-    char c;
-    attr_t attr;
-};
+    cstr = new cchar[lenght];
+    for (size_t i = 0; i < lenght; ++i)
+      cstr[i] = t.cstr[i];
+    return *this;
+  }
+  
+  ~text()
+  { delete [] cstr; }
 
-struct Text {
-
-    Text(): text(nullptr), len(0) {}
-
-    Text (const Text &t) {
-        len = t.len;
-        text = new cchar[len];
-        for (size_t i = 0; i < len; ++i)
-            text[i] = t.text[i];
-
-    }
-
-    Text (const string &s) : Text(s.data()) {}
-
-    Text(const char *s, attr_t at) : Text(s) {
-        for (size_t i = 0; i < len; ++i)
-            text[i].attr = at;
-    }
-
-    Text(const char *s) {
-        len = strlen(s);
-
-        text = new cchar[len] {};
-        for (size_t i = 0; i < len; ++i)
-            text[i].c = s[i];
-    }
-
-    Text& operator=(const Text &t) {
-        if (this == &t)
-            return *this;
-        delete [] text;
-
-        len = t.len;
-
-        text = new cchar[len];
-        for (size_t i = 0; i < len; ++i)
-            text[i] = t.text[i];
-
-        return *this;
-    }
-
-    cchar& operator[](size_t i)
-    { return this->text[i]; }
-
-    cchar& at(size_t i)
-    {
-        if (i >= len) throw std::out_of_range("The value entered is out of range");
-        return this->text[i];
-    }
-
-    cchar* begin()
-    { return text; }
-
-    cchar* end()
-    { return text + len; }
-
-    bool empty() const
-    { return len == 0; }
-
-    ~Text() {
-        delete [] text;
-    }
-
-    cchar* text;
-    size_t len;
+  struct cchar *cstr;
+  size_t lenght;
 };
 
 class game_error : public runtime_error {

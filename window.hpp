@@ -14,158 +14,110 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+/* This file is part of Walker.
+ *
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef WINDOW_HPP
 #define WINDOW_HPP
 
 #include <ncurses.h>
 #include <panel.h>
 #include <menu.h>
-#include <cstring>
-#include <vector>
-#include "utils.hpp"
 
-using std::vector;
+#include "utils.hpp"
 
 #define REQ_EXEC_ITEM (MAX_MENU_COMMAND + 1)
 
-class Window {
-public:
+struct window;
 
-    struct Location {
-      int x, y, lines, cols;
-    };
+enum position
+{
+    POSITION_FULL,
+    POSITION_AVERAGE,
+    POSITION_SMALL,
+};
 
-    enum Position {
-        full,
-        aver,
-        small,
-        game,
-        stat,
-        log,
-    };
+enum option
+{
+    OPTION_NORMAL     = 0,
+    OPTION_BORDERLESS = 1 << 0,
+};
 
-    enum Option {
-        normal     = 0,
-        borderless = 1 << 0,
-    };
+struct location
+{
+    int x, y, lines, cols;
+};
 
-    struct Menu {
-        Menu() : label(), act() {}
-        Menu(const string &l) : label(l), act() {}
-        Menu(const string &l, const ActionAV &a) : label(l), act(a) {}
+struct item
+{
+  const char *label;
+  struct action action;
 
-        string label;
-        ActionAV act;
-    };
+  item() = default;
+  item(const char *l)
+    : label(l), action() {}
+  item(const char *l, struct action &&a)
+    : label(l), action(a) {}
+};
 
-    struct Hook {
-        Hook() : key(0), act() {}
-        Hook(int k, const ActionAV &a) : key(k), act(a) {}
-        int key;
-        ActionAV act;
-    };
+struct hook
+{
+  int key;
+  struct action action;
 
-    struct Builder {
-        Builder(Position p_, vector<Menu> &m_,
-                    const vector<Hook> &h_, const Text &t_, const Text &title_,
-                    Option o_ = normal) :
-           p(p_), o(o_), m(m_), h(h_), t(t_), title(title_) {}
+  hook(int k, struct action &&a)
+    : key(k), action(a) {}
+};
 
-        /* Message replacing */
-        Builder operator|(const string &mesg)
-        {
-            Builder nc(*this);
-            nc.t = mesg;
-            return nc;
-        }
+struct builder
+{
+  enum position position;
+  struct item *items;
+  struct hook *hooks;
+  struct text text;
+  struct text title;
+  enum option options;
 
-        const Position p;
-        const Option o;
-        vector<Menu> &m;
-        const vector<Hook> &h;
-        Text t, title;
-    };
-
-private:
-
-    PANEL  *m_pan;
-    WINDOW *m_win;
-    WINDOW *m_sub_t;
-    WINDOW *m_sub_m;
-    MENU   *m_menu;
-    ITEM   **m_items;
-
-    // Window which has top panel in the panel stack
-    static Window *topw;
-
-    enum Position m_pos;
-    const vector<Hook> *m_hooks;
-
-    Window(const Builder &c);
-    ~Window();
-
-    void _refresh() const;
-    void _hook() const;
-
-    void _menu_driver(int act) const;
-
-    void _print(const vector<Text> &vt, int x, int y);
-    void _print(const Text &t);
-
-public:
-    // prefix "a" - union "Args" as function argument
-
-    static Window *push(const Builder &c)
-    { return (topw = new Window(c)); }
-
-    // ~Window() changes topw to below Window * (by PANEL stack)
-    static void pop()
-    { delete topw; }
-
-    static void clear()
-    { while(topw) pop(); }
-
-    static Window *top()
-    { return topw; }
-
-    static bool has(const Window *w)
-    {
-        const Window *temp = topw;
-
-        while (temp)
-            if (temp == w)
-                return true;
-            else
-                temp = reinterpret_cast<const Window *>(panel_userptr(panel_below(temp->m_pan)));
-
-        return false;
-    }
-
-    /* Static methods for the TOP Window */
-
-    static bool refresh()
-    { return topw? (static_cast<void>(topw->_refresh()), true) : false; }
-
-    static bool hook()
-    { return topw? (static_cast<void>(topw->_hook()), true) : false; }
-
-    static bool menu_driver(int act)
-    { return topw? (static_cast<void>(topw->_menu_driver(act)), true) : false; }
-
-    static bool print(const Text &t)
-    { return topw? (static_cast<void>(topw->_print(t)), true) : false; }
-
-    static bool print(const vector<Text> &t, int x, int y)
-    { return topw? (static_cast<void>(topw->_print(t, x, y)), true) : false; }
-
-    static void set(const Builder &c)
-    { clear(); push(c); }
-
-    static Location get_location(Position p);
-
-    static Location get_location()
-    { return topw? get_location(topw->m_pos): Location{0, 0, 0, 0}; }
+  builder(enum position p,
+          struct item *i,
+          struct hook *h,
+          const struct text &t,
+          const struct text &e,
+          enum option o = OPTION_NORMAL)
+    : position(p), items(i), hooks(h), text(t), title(e), options(o) {}
 
 };
+
+window *window_push(const builder &builder);
+void window_pop(void);
+void window_refresh(void);
+void window_hook(void);
+void window_menu_driver(int);
+void window_set(const builder &);
+void window_clear(void);
+
+bool window_has(struct window *);
+window *window_top(void);
+
+void window_print(const struct text *);
+void window_print(const vector<text> &, int x, int y);
+
+struct location window_get_location(enum position);
+
+/* Get location of top window */
+struct location window_get_location(void);
 
 #endif // WINDOW_HPP

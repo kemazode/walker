@@ -20,54 +20,92 @@
 #include "utils.hpp"
 #include "window.hpp"
 
-using W = Window;
-
-struct Menu {
-    enum
-    {
-        null,
-        main,
-        game,
-        okay,
-        map_creator,
-        map_sizes,
-    };
+enum menu
+{
+    MENU_MAIN,
+    MENU_GAME,
+    MENU_OKAY,
+    MENU_MAP_CREATOR,
+    MENU_MAP_SIZES,
 };
 
-struct Hooks {
-    enum
-    {
-        null,
-        main,
-        game,
-        menu,
-        event_dialog,
-    };
+
+enum hooks
+{
+    HOOKS_MAIN,
+    HOOKS_GAME,
+    HOOKS_MENU,
+    HOOKS_EVENT_DIALOG,
 };
 
-struct Builder {
-    enum
-    {
-        main,
-        game,
-        game_menu,
-        okay,
-        map_creator,
-        map_sizes,
-        error,
-    };
+enum desc
+{
+  DESC_MAIN,
+  DESC_MAP_CREATOR,
+  DESC_MAP_SIZES,
 };
+
+enum title
+{
+  TITLE_MENU,
+  TITLE_MESSAGE,
+  TITLE_MAP_CREATOR,
+  TITLE_MAP_SIZES,
+  TITLE_ERROR,
+};
+
+enum build
+{
+    BUILD_MAIN,
+    BUILD_GAME,
+    BUILD_GAME_MENU,
+    BUILD_OKAY,
+    BUILD_MAP_CREATOR,
+    BUILD_MAP_SIZES,
+    BUILD_ERROR,
+    BUILD_END,
+};
+
 
 // Functions for working with the scenario
-void scenario_move_player_x(Arg);
-void scenario_move_player_y(Arg);
-void scenario_move_view_x  (Arg);
-void scenario_move_view_y  (Arg);
-void scenario_generate     (Arg);
-void scenario_load            ();
+void scenario_move_player_x(arg_t);
+void scenario_move_player_y(arg_t);
+void scenario_move_view_x  (arg_t);
+void scenario_move_view_y  (arg_t);
+void scenario_generate     (arg_t);
+void scenario_load              ();
 
-extern vector<W::Builder>      builder;
-extern vector<vector<W::Menu>> menus;
-extern vector<vector<W::Hook>> hooks;
+void init_builder(void);
+
+extern item *menus[];
+extern hook *hooks[];
+extern builder build[];
+
+/* For convenience */
+inline void window_push(arg_t arg, const string &str)
+{
+  window_push(builder(build[arg].position,
+                      build[arg].items,
+                      build[arg].hooks,
+                      str,
+                      build[arg].title,
+                      build[arg].options));
+}
+
+inline void window_push(arg_t arg, const char *str)
+{
+  window_push(builder(build[arg].position,
+                      build[arg].items,
+                      build[arg].hooks,
+                      str,
+                      build[arg].title,
+                      build[arg].options));
+}
+
+inline void window_push(arg_t arg)
+{ window_push(build[arg]); }
+
+inline void window_set(arg_t arg)
+{ window_set(build[arg]); }
 
 #endif // UI_HPP

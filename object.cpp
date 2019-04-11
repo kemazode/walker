@@ -75,13 +75,18 @@ bool Object::visible(char path) const
     return m_unvisible.find(path) == string::npos;
 }
 
-/* ------------------------------------------------------------ */
-
-constexpr const int    DWARF_VISIBLE_RANGE = 10;
+constexpr const int    DWARF_VISION_RANGE = 10;
 constexpr const char  *DWARF_OBSTACLES     = "~#";
 constexpr const char  *DWARF_UNVISIBLE     = "#";
 constexpr const char   DWARF_SYMBOL        = '@';
 constexpr const attr_t DWARF_ATTR          = A_BOLD;
 
 Dwarf::Dwarf(const string &id, int x, int y)
-    : Object(id, x, y, DWARF_VISIBLE_RANGE, cchar(DWARF_SYMBOL, DWARF_ATTR), DWARF_OBSTACLES, DWARF_UNVISIBLE) {};
+    : Object(id,
+             x,
+             y,
+             DWARF_VISION_RANGE,
+             cchar{DWARF_SYMBOL, DWARF_ATTR},
+             DWARF_OBSTACLES,
+             DWARF_UNVISIBLE)
+{};

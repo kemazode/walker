@@ -204,7 +204,7 @@ void Scenario::turn()
     render();
 
     for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
-        (*iter)->test();
+      (*iter)->test();
 }
 
 void Scenario::render()

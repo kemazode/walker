@@ -117,7 +117,7 @@ void mkdir_parents(const char *dir)
 
 void scenario_init(arg_t arg)
 {
-    const string scene_load = reinterpret_cast<char *>(arg);
+    char* scene_load = reinterpret_cast<char *>(arg);
 
     auto location = window_get_location(build[BUILD_GAME].position);
 
@@ -191,7 +191,7 @@ void scenario_load()
         if (dirp->d_type & DT_REG) {
             //files.emplace_back(dir + dirp->d_name);
             string path = dir + dirp->d_name;
-            paths.emplace_back (new char[path.size()]);
+            paths.emplace_back (new char[path.size() + 1]);
             strcpy(paths.back().get(), path.c_str());
 
             names.emplace_back (new char[strlen(dirp->d_name) + 1]);

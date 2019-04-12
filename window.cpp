@@ -188,12 +188,12 @@ void window_pop()
         free_item(top_window->items[n]);
     }
 
-    free(top_window->items);
+    delete [] top_window->items;
     del_panel(top_window->panel);
     delwin(top_window->sub_window_menu);
     delwin(top_window->sub_window_text);
     delwin(top_window->window);
-    free(top_window);
+    delete top_window;
 
     top_window = new_top_window;
 
@@ -218,7 +218,7 @@ void window_menu_driver(int req)
     struct item *item = (struct item *) item_userptr(current_item(top_window->menu));
     switch (req) {
     case REQ_EXEC_ITEM:
-        if (item) item->action.function(item->action.arg);
+        if (item) item->action();
         return;
     }
 
@@ -237,8 +237,10 @@ void window_hook()
     /* "cur == top_window &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон,
      * или создаст новое, при этом указатель может повиснет на освобожденной структуре*/
     for (int i = 0; cur == top_window && i < cur->hooks_c; ++i)
-        if (cur->hooks[i].key == key)
-            cur->hooks[i].action.function(cur->hooks[i].action.arg);
+        if (cur->hooks[i].key == key) {
+            cur->hooks[i].action();
+            return;
+          }
 }
 
 void window_print(const vector<text> &vec, int x, int y)

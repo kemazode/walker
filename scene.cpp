@@ -42,8 +42,6 @@ using std::istringstream;
 using std::getline;
 using std::find;
 
-using W = Window;
-
 static const char *parse_error = "YAML configuration does not match the scenario specification.";
 
 Scenario::Scenario(const string &f, int l, int c) :
@@ -56,8 +54,8 @@ Scenario::Scenario(const string &f, int l, int c) :
 {
     load(f);
 
-    set_view(m_player->getx() - m_cols/2,
-             m_player->gety() - m_lines/2);
+    set_view(m_player->x() - m_cols/2,
+             m_player->y() - m_lines/2);
 
     m_source.decorate();
 }
@@ -70,8 +68,8 @@ void Scenario::load(const string& f)
 
 void Scenario::move_player(int x, int y)
 {    
-    int px = m_player->getx();
-    int py = m_player->gety();
+    int px = m_player->x();
+    int py = m_player->y();
 
     /* Return view to player */
     set_view(px - m_cols / 2, py - m_lines / 2);
@@ -82,7 +80,7 @@ void Scenario::move_player(int x, int y)
     if (abroad(npx, npy))
         return;
 
-    if (m_player->move(x, y, m_source.at(npx, npy).c))
+    if (m_player->move(x, y, m_source.at(npx, npy).symbol))
     {
         set_view(npx - m_cols / 2, npy - m_lines / 2);
         turn();
@@ -100,32 +98,32 @@ void Scenario::set_view(int x, int y)
 
 void Scenario::render_set_visible(int x, int y)
 {
-    m_render.at(x, y).attr &= ~(A_INVIS | A_DIM);
-    m_render.at(x, y).attr |= A_BOLD;
+    m_render.at(x, y).attribute &= ~(A_INVIS | A_DIM);
+    m_render.at(x, y).attribute |= A_BOLD;
 }
 
 void Scenario::source_set_detected(int x, int y)
 {
-    m_source.at(x, y).attr &= ~A_INVIS;
-    m_source.at(x, y).attr |= A_DIM;
+    m_source.at(x, y).attribute &= ~A_INVIS;
+    m_source.at(x, y).attribute |= A_DIM;
 }
 
 void Scenario::render_los(const Object &viewer)
 {
     using std::hypot;    
 
-    int vision_range = viewer.get_vision_range();
+    int vision_range = viewer.vision_range();
 
-    int px = viewer.getx();
-    int py = viewer.gety();
+    int px = viewer.x();
+    int py = viewer.y();
 
     for (int y = py - vision_range; y < py + vision_range; ++y)
         for (int x = px - vision_range; x < px + vision_range; ++x)
         {
             if (round(hypot(x - px, y - py)) >= vision_range) continue;
 
-            int px = viewer.getx();
-            int py = viewer.gety();
+            int px = viewer.x();
+            int py = viewer.y();
 
             int delta_x(x - px);
 
@@ -141,7 +139,7 @@ void Scenario::render_los(const Object &viewer)
             {
                 source_set_detected(px, py);
                 render_set_visible(px, py);
-                if (!viewer.visible(m_source.at(px, py).c))
+                if (!viewer.visible(m_source.at(px, py).symbol))
                     goto next_line;
             }
 
@@ -164,7 +162,7 @@ void Scenario::render_los(const Object &viewer)
                     {
                         source_set_detected(px, py);
                         render_set_visible(px, py);
-                        if (!viewer.visible(m_source.at(px, py).c))
+                        if (!viewer.visible(m_source.at(px, py).symbol))
                             goto next_line;
                     }
                 }
@@ -188,7 +186,7 @@ void Scenario::render_los(const Object &viewer)
                     {
                         source_set_detected(px, py);
                         render_set_visible(px, py);
-                        if (!viewer.visible(m_source.at(px, py).c))
+                        if (!viewer.visible(m_source.at(px, py).symbol))
                             goto next_line;
                     }
                 }
@@ -215,9 +213,14 @@ void Scenario::render()
     render_los(*m_player);
 
     for (auto& obj : m_objects)
-        m_render.at(obj->getx(), obj->gety()).replace_sc(obj->getcchar());
+      {
+        auto &tile = m_render.at(obj->x(), obj->y());
+        tile.symbol = obj->symbol().symbol;
+        tile.attribute &= ~COLOR_PAIR( PAIR_NUMBER(tile.attribute) );
+        tile.attribute |=  COLOR_PAIR( PAIR_NUMBER(obj->symbol().attribute) );
+      }
 
-    W::print(m_render.gettexts(), getx(), gety());    
+    window_print(m_render.gettexts(), getx(), gety());
 }
 
 list<shared_ptr<Object>>::iterator Scenario::get_object(const string& id)
@@ -293,8 +296,8 @@ bool Scenario::parse_condition(const string& cond)
                 int x;
                 int y;
                 in >> x >> y;
-                if (x == (*object)->getx() and
-                        y == (*object)->gety())
+                if (x == (*object)->x() and
+                        y == (*object)->y())
                     return true;
             }
 
@@ -330,7 +333,7 @@ void Scenario::parse_command(const string& comm)
         if (id == RESERVED_WINDOW_ID)
         {
             if (method == "close")
-                W::pop();
+                window_pop();
 
             return;
         }
@@ -338,7 +341,7 @@ void Scenario::parse_command(const string& comm)
         if (id == RESERVED_SCENARIO_ID)
         {
             if (method == "exit")
-                W::set(builder.at(Builder::main));
+               window_set(BUILD_MAIN);
 
             return;
         }

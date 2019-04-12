@@ -129,7 +129,7 @@ void scenario_init(arg_t arg)
         return;
     }
     
-    window_set(BUILD_GAME);
+    window_push(BUILD_GAME);
     scenario->render();
 }
 

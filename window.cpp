@@ -234,8 +234,9 @@ void window_hook()
 
     int key = getch();
 
-    /* "cur &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон */
-    for (int i = 0; cur && i < cur->hooks_c; ++i)
+    /* "cur == top_window &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон,
+     * или создаст новое, при этом указатель может повиснет на освобожденной структуре*/
+    for (int i = 0; cur == top_window && i < cur->hooks_c; ++i)
         if (cur->hooks[i].key == key)
             cur->hooks[i].action.function(cur->hooks[i].action.arg);
 }

@@ -60,6 +60,7 @@ enum format
 {
   FORMAT_RIGHT,
   FORMAT_CENTER,
+  FORMAT_CENTER_RIGHT,
 };
 
 struct location
@@ -70,13 +71,16 @@ struct location
 struct item
 {
   const char *label;
+  const char *description = nullptr;
   struct action action;
 
   item() = default;
   item(const char *l)
-    : label(l), action() {}
+    : label(l) {}
   item(const char *l, struct action &&a)
     : label(l), action(a) {}
+  item(const char *l, const char *d, struct action &&a)
+    : label(l), description(d), action(a) {}
 };
 
 struct hook
@@ -95,8 +99,10 @@ struct builder
   struct hook *hooks;
   struct text text;
   struct text title;
+  const struct text *image;
   enum option options;
-  enum format format;
+  enum format image_format;
+  enum format text_format;
 
   builder(enum position p,
           struct item *i,
@@ -104,15 +110,18 @@ struct builder
           const struct text &t,
           const struct text &e,
           enum option o = OPTION_NORMAL,
-          enum format f = FORMAT_RIGHT)
+          enum format ef = FORMAT_CENTER,
+          const struct text *im = nullptr,
+          enum format imf = FORMAT_CENTER_RIGHT)
     : position(p),
       items(i),
       hooks(h),
       text(t),
       title(e),
+      image(im),
       options(o),
-      format(f)
-  {}
+      image_format(imf),
+      text_format(ef) {}
 };
 
 window *window_push(const builder &builder);

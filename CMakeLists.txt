@@ -14,6 +14,7 @@ set(SOURCES main.cpp
             event.cpp
             map.cpp
             ui.cpp
+            images.cpp
             )
             
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

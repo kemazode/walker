@@ -50,7 +50,7 @@ class scenario {
   string                             m_file;
   int                                m_lines;
   int                                m_cols;
-  bool                               m_lock;
+  bool                               m_lock = false;
   Map                                m_source      = Map(DEFAULT_MAP_ID, "", 0, 0);
   Map                                m_render      = Map(DEFAULT_MAP_ID, "", 0, 0);
   render_f                           m_render_f;

@@ -67,7 +67,7 @@ void init_dirs()
         return;
     }
 
-    char path[F_COUNT][PATH_MAX];
+    char path[F_COUNT][PATH_MAX] {};
 
     for (int i = 0; i < F_COUNT; ++i) {
         strcat(path[i], home);

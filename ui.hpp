@@ -68,8 +68,8 @@ enum build
 
 void init_builder(void);
 
-extern item *menus[];
-extern hook *hooks[];
+extern  item *menus[];
+extern  hook *hooks[];
 extern builder build[];
 
 /* For convenience */

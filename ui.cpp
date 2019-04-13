@@ -21,6 +21,7 @@
 #include "map.hpp"
 #include "ui.hpp"
 #include "scene.hpp"
+#include "images.hpp"
 
 using std::unique_ptr;
 
@@ -31,11 +32,9 @@ static void scenario_init(arg_t);
 
 static item menu_main[] =
 {
-  item("Start New Game", {fun_t(scenario_menu), 0}),
-  item("Create Map",     {window_push, BUILD_MAP_CREATOR}),
-  item("Scoreboard"),
-  item("Options"),
-  item("Exit",           {fun_t(window_clear), 0}),
+  item("Start a new scenario", "You can choose a scenario from the list and start its passage.", {fun_t(scenario_menu), 0}),
+  item("Create map", "Here you can generate your own ASCII map.", {window_push, BUILD_MAP_CREATOR}),
+  item("Exit","Just quitting the game.",           {fun_t(window_clear), 0}),
   {nullptr, {nullptr , 0}}
 };
 
@@ -60,9 +59,9 @@ static item menu_map_creator[] =
 
 static item menu_map_sizes[] =
 {
-  item("100x100", {map_generate, 100}),
-  item("250x250", {map_generate, 250}),
-  item("500x500", {map_generate, 500}),
+  item("w: 100, h: 100", {map_generate, 100}),
+  item("w: 250, h: 250", {map_generate, 250}),
+  item("w: 500, h: 500", {map_generate, 500}),
   {nullptr, {nullptr , 0}}
 };
 
@@ -131,14 +130,14 @@ hook *hooks[] =
   hooks_event_dialog,
 };
 
-static text descs[] =
+const static text descs[] =
 {
-  "Welcome!",
+  "You are welcome!",
   "Create your own map.",
   "Select map size:"
 };
 
-static text titles[] =
+const static text titles[] =
 {
   "Menu",
   "Message",
@@ -149,13 +148,75 @@ static text titles[] =
 
 builder build[] =
 {
-  builder(POSITION_FULL,  menus[MENU_MAIN],        hooks[HOOKS_MAIN], descs[DESC_MAIN],        titles[TITLE_MENU]),
-  builder(POSITION_FULL,  nullptr,                 hooks[HOOKS_GAME], nullptr,                 nullptr, OPTION_BORDERLESS),
-  builder(POSITION_SMALL, menus[MENU_GAME],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_MENU]),
-  builder(POSITION_SMALL, menus[MENU_OKAY],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_MESSAGE]),
-  builder(POSITION_FULL,  menus[MENU_MAP_CREATOR], hooks[HOOKS_MENU], descs[DESC_MAP_CREATOR], titles[TITLE_MAP_CREATOR]),
-  builder(POSITION_SMALL, menus[MENU_MAP_SIZES],   hooks[HOOKS_MENU], descs[DESC_MAP_SIZES],   titles[TITLE_MAP_SIZES]),
-  builder(POSITION_SMALL, menus[MENU_OKAY],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_ERROR]),
+  builder
+  (
+  POSITION_FULL,
+  menus[MENU_MAIN],
+  hooks[HOOKS_MAIN],
+  descs[DESC_MAIN],
+  titles[TITLE_MENU],
+  OPTION_NORMAL,
+  FORMAT_CENTER,
+  images[IMAGE_HORSEBACK_FIGHT]
+  ),
+
+  builder
+  (
+  POSITION_FULL,
+  nullptr,
+  hooks[HOOKS_GAME],
+  nullptr,
+  nullptr,
+  OPTION_BORDERLESS
+  ),
+
+  builder
+  (
+  POSITION_SMALL,
+  menus[MENU_GAME],
+  hooks[HOOKS_MENU],
+  nullptr,
+  titles[TITLE_MENU]
+  ),
+
+  builder
+  (
+  POSITION_SMALL,
+  menus[MENU_OKAY],
+  hooks[HOOKS_MENU],
+  nullptr,
+  titles[TITLE_MESSAGE]
+  ),
+
+  builder
+  (
+  POSITION_FULL,
+  menus[MENU_MAP_CREATOR],
+  hooks[HOOKS_MENU],
+  descs[DESC_MAP_CREATOR],
+  titles[TITLE_MAP_CREATOR],
+  OPTION_NORMAL,
+  FORMAT_CENTER,
+  images[IMAGE_MOUNTAINS]
+  ),
+
+  builder
+  (
+  POSITION_SMALL,
+  menus[MENU_MAP_SIZES],
+  hooks[HOOKS_MENU],
+  descs[DESC_MAP_SIZES],
+  titles[TITLE_MAP_SIZES]
+  ),
+
+  builder
+  (
+  POSITION_SMALL,
+  menus[MENU_OKAY],
+  hooks[HOOKS_MENU],
+  nullptr,
+  titles[TITLE_ERROR]
+  ),
 };
 
 
@@ -248,7 +309,7 @@ void scenario_menu()
         };
     load_menu.get()[paths.size()] = {};
 
-    window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
+    window *wptr = window_push(builder(POSITION_AVERAGE, load_menu.get(), hooks[HOOKS_MENU],
                                        "Select the scenario:",
                                        "Scenarios"));
 

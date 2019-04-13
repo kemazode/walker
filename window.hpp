@@ -56,6 +56,12 @@ enum option
     OPTION_BORDERLESS = 1 << 0,
 };
 
+enum format
+{
+  FORMAT_RIGHT,
+  FORMAT_CENTER,
+};
+
 struct location
 {
     int x, y, lines, cols;
@@ -90,15 +96,23 @@ struct builder
   struct text text;
   struct text title;
   enum option options;
+  enum format format;
 
   builder(enum position p,
           struct item *i,
           struct hook *h,
           const struct text &t,
           const struct text &e,
-          enum option o = OPTION_NORMAL)
-    : position(p), items(i), hooks(h), text(t), title(e), options(o) {}
-
+          enum option o = OPTION_NORMAL,
+          enum format f = FORMAT_RIGHT)
+    : position(p),
+      items(i),
+      hooks(h),
+      text(t),
+      title(e),
+      options(o),
+      format(f)
+  {}
 };
 
 window *window_push(const builder &builder);

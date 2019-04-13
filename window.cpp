@@ -15,6 +15,7 @@
 */
 
 #include <cstdlib>
+#include <cmath>
 
 #include "window.hpp"
 #include "utils.hpp"
@@ -26,20 +27,21 @@
 #define COLS_BORDERS (COLS_BORDERS_WIDTH*2)
 
 #define TEXT_BORDER_INDENT_X COLS_BORDERS_WIDTH
+#define TEXT_BORDER_INDENT_Y 1
 
 #define TITLE_SEPARATION " "
 #define ITEM_DESCRIPTION " "
 #define ITEM_SELECT " >>---> "
 
 static int text_height(const struct text *t, int freecols);
-static int waddtext(WINDOW *w, const struct text *t);
+static int waddtext(WINDOW *w, const struct text *t, format f = FORMAT_RIGHT);
 static int waddcchar(WINDOW *w, const struct cchar *t);
 
 static int items_count(struct item *);
 static int hooks_count(struct hook *);
 
-#define mvwaddtext(win,y,x,t) \
-    (wmove((win),(y),(x)) == ERR ? ERR : waddtext((win),(t)))
+inline int mvwaddtext(WINDOW *w, int x, int y, const text *t, format f = FORMAT_CENTER)
+{ return wmove(w,y,x) == ERR ? ERR : waddtext(w,t,f); }
 
 struct window {
     PANEL  *panel;
@@ -88,7 +90,7 @@ window *window_push(const struct builder &builder)
 
     wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
 
-    int nextline = LINES_BORDERS_WIDTH;
+    int nextline = LINES_BORDERS_WIDTH + TEXT_BORDER_INDENT_Y;
 
     if (builder.text.lenght)
     {
@@ -97,6 +99,7 @@ window *window_push(const struct builder &builder)
         /* Text drawing */
         new_w->sub_window_text = derwin(new_w->window, text_h, loc_w.cols - 2*TEXT_BORDER_INDENT_X, nextline, COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
         mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text);
+        //box(new_w->sub_window_text, 0 ,0 );
 
         nextline += text_h;
     } else
@@ -376,11 +379,57 @@ int text_height(const struct text *t, int freecols)
     return text_height;
 }
 
-int waddtext(WINDOW *w, const struct text *t)
-{
+int waddtext(WINDOW *w, const struct text *t, format f)
+{    
     int rc = OK;
-    for (size_t i = 0; i < t->lenght; ++i)
-        rc = waddcchar(w, &t->cstr[i]);
+
+    if (f == FORMAT_CENTER)
+      {
+        int width = getmaxx(w) - getcurx(w);
+        bool indent_exists = false;
+        int next_newline = int(t->lenght) - 1;
+
+        for (int i = 0; i < int(t->lenght); ++i)
+          if (t->cstr[i].symbol == '\n')
+            {
+              next_newline = i;
+              break;
+            }
+
+        for (int i = 0; i < int(t->lenght); ++i)
+          {
+            /* When newline */
+            if (getmaxx(w) - getcurx(w) == width)
+              {
+                indent_exists = false;
+
+                next_newline = int(t->lenght) - i;
+                for (int n = i + 1; n < int(t->lenght); ++n)
+                  if (t->cstr[n].symbol == '\n')
+                    {
+                      next_newline = n - i;
+                      break;
+                    }
+              }
+
+             if (next_newline <= width && !indent_exists)
+              {
+                indent_exists = true;
+
+                int indent_lenght = (width - next_newline)/2;
+                for (int i = 0; i <= indent_lenght; ++i)
+                  rc = waddch(w, ' ');
+              }
+
+            rc = waddcchar(w, &t->cstr[i]);
+          }
+      }
+    else if (f == FORMAT_RIGHT)
+      {
+        for (int i = 0; i < int(t->lenght); ++i)
+          rc = waddcchar(w, &t->cstr[i]);
+      }
+
     return rc;
 }
 

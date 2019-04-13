@@ -21,12 +21,11 @@
 #include <string>
 #include <memory>
 
+#include "event.hpp"
+#include "object.hpp"
 #include "map.hpp"
 
-class Object;
-class Event;
-
-using std::shared_ptr;
+using std::unique_ptr;
 using std::list;
 using std::string;
 
@@ -42,9 +41,9 @@ class Scenario {
     Map m_source;
     Map m_render;
 
-    list<shared_ptr<Event>>  m_events;
-    list<shared_ptr<Object>> m_objects;
-    shared_ptr<Object> m_player;
+    list<unique_ptr<Event>>  m_events;
+    list<unique_ptr<Object>> m_objects;
+    list<unique_ptr<Object>>::iterator m_player;
 
     vector<string> m_identifiers;
 
@@ -59,8 +58,8 @@ class Scenario {
     bool abroady(int y)
     { return y >= m_source.height() || y < 0; }
 
-    list<shared_ptr<Object>>::iterator get_object(const string& id);
-    list<shared_ptr<Event>>::iterator  get_event(const string& id);
+    list<unique_ptr<Object>>::iterator get_object(const string& id);
+    list<unique_ptr<Event>>::iterator  get_event(const string& id);
 
     void render_los(const Object& viewer);
     void render_set_visible(int x, int y);

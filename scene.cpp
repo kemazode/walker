@@ -29,7 +29,7 @@
 #include "object.hpp"
 #include "window.hpp"
 
-constexpr const int   DEFAULT_VISIBLE_RANGE = 10;
+constexpr const char *DEFAULT_PARSE_ERROR = "YAML configuration does not match the scenario specification.";
 constexpr const char *DEFAULT_PLAYER_ID     = "player";
 constexpr const char *DEFAULT_MAP_ID        = "map";
 constexpr const char *RESERVED_WINDOW_ID    = "window";
@@ -41,21 +41,19 @@ using std::vector;
 using std::istringstream;
 using std::getline;
 using std::find;
-
-static const char *parse_error = "YAML configuration does not match the scenario specification.";
+using std::prev;
 
 Scenario::Scenario(const string &f, int l, int c) :
     m_lines(l),
     m_cols(c),
     m_source(DEFAULT_MAP_ID, "", 0, 0),
-    m_render(DEFAULT_MAP_ID, "", 0, 0),
-    m_player(new Object(DEFAULT_PLAYER_ID, 0, 0, DEFAULT_VISIBLE_RANGE, cchar(), "", "")),
+    m_render(DEFAULT_MAP_ID, "", 0, 0),    
     m_identifiers({RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID})
 {
     load(f);
 
-    set_view(m_player->x() - m_cols/2,
-             m_player->y() - m_lines/2);
+    set_view((*m_player)->x() - m_cols/2,
+             (*m_player)->y() - m_lines/2);
 
     m_source.decorate();
 }
@@ -68,8 +66,8 @@ void Scenario::load(const string& f)
 
 void Scenario::move_player(int x, int y)
 {    
-    int px = m_player->x();
-    int py = m_player->y();
+    int px = (*m_player)->x();
+    int py = (*m_player)->y();
 
     /* Return view to player */
     set_view(px - m_cols / 2, py - m_lines / 2);
@@ -80,7 +78,7 @@ void Scenario::move_player(int x, int y)
     if (abroad(npx, npy))
         return;
 
-    if (m_player->move(x, y, m_source.at(npx, npy).symbol))
+    if ((*m_player)->move(x, y, m_source.at(npx, npy).symbol))
     {
         set_view(npx - m_cols / 2, npy - m_lines / 2);
         turn();
@@ -210,7 +208,7 @@ void Scenario::turn()
 void Scenario::render()
 {
     m_render = m_source;
-    render_los(*m_player);
+    render_los(*m_player->get());
 
     for (auto& obj : m_objects)
       {
@@ -223,7 +221,7 @@ void Scenario::render()
     window_print(m_render.gettexts(), getx(), gety());
 }
 
-list<shared_ptr<Object>>::iterator Scenario::get_object(const string& id)
+list<unique_ptr<Object>>::iterator Scenario::get_object(const string& id)
 {
     for (auto iter = m_objects.begin(); iter != m_objects.end(); ++iter)
     {
@@ -233,7 +231,7 @@ list<shared_ptr<Object>>::iterator Scenario::get_object(const string& id)
     return m_objects.end();
 }
 
-list<shared_ptr<Event>>::iterator Scenario::get_event(const string& id)
+list<unique_ptr<Event>>::iterator Scenario::get_event(const string& id)
 {
     for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
     {
@@ -479,14 +477,14 @@ void Scenario::parse_yaml() {
     node = yaml_document_get_root_node(&document);
 
     try {
-        if (not (node and node->type == YAML_MAPPING_NODE)) throw game_error(parse_error);
+        if (not (node and node->type == YAML_MAPPING_NODE)) throw game_error(DEFAULT_PARSE_ERROR);
 
         for (auto pair = node->data.mapping.pairs.start;
              pair < node->data.mapping.pairs.top; ++pair)
         {
             auto section = yaml_document_get_node(&document, pair->key);
 
-            if (section->type != YAML_SCALAR_NODE) throw game_error(parse_error);
+            if (section->type != YAML_SCALAR_NODE) throw game_error(DEFAULT_PARSE_ERROR);
 
             const char *key = reinterpret_cast<const char *>(section->data.scalar.value);
 
@@ -514,7 +512,7 @@ void Scenario::parse_yaml() {
 
 void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
 {
-    if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
+    if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
 
     for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
@@ -522,7 +520,7 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
         auto node_value = yaml_document_get_node(doc, pair->value);
 
         if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(parse_error);
+            throw game_error(DEFAULT_PARSE_ERROR);
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
@@ -530,13 +528,13 @@ void Scenario::parse_yaml_objects(const yaml_node_t *node, yaml_document_t *doc)
         add_id(key);
 
         if (!strcmp(key, DEFAULT_PLAYER_ID))
-            m_player = m_objects.front();
+            m_player = prev(m_objects.end());
     }
 }
 
 void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
 {
-    if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
+    if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
 
     for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
@@ -544,7 +542,7 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
         auto node_value = yaml_document_get_node(doc, pair->value);
 
         if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(parse_error);
+            throw game_error(DEFAULT_PARSE_ERROR);
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
@@ -555,7 +553,7 @@ void Scenario::parse_yaml_maps(const yaml_node_t *node, yaml_document_t *doc)
 
 void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
 {
-    if (node->type != YAML_MAPPING_NODE) throw game_error(parse_error);
+    if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
 
     for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
@@ -563,7 +561,7 @@ void Scenario::parse_yaml_events(const yaml_node_t *node, yaml_document_t *doc)
         auto node_value = yaml_document_get_node(doc, pair->value);
 
         if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(parse_error);
+            throw game_error(DEFAULT_PARSE_ERROR);
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 

@@ -16,11 +16,11 @@
 
 #include <unordered_map>
 #include <fstream>
+#include <yaml.h>
 
 #include "map.hpp"
 #include "utils.hpp"
 #include "perlin.hpp"
-#include "yaml.h"
 
 #define F_GENERATE "Generation.txt"
 

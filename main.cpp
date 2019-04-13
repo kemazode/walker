@@ -177,8 +177,8 @@ void scenario_load()
     string dir = home;
     dir = dir + '/' + F_SCENARIOS;
 
-    vector<shared_ptr<char[]>> paths;
-    vector<shared_ptr<char[]>> names;
+    vector<unique_ptr<char[]>> paths;
+    vector<unique_ptr<char[]>> names;
 
     DIR *dp;
     struct dirent *dirp;

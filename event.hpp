@@ -37,7 +37,7 @@ using Commands = vector<string>;
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class Scenario;
+class scenario;
 class Event;
 
 struct Item {
@@ -59,13 +59,10 @@ class Event : public Base {
     string      m_title;
     position    m_position;
 
-    Scenario &m_scenario;
-
     bool m_happened;
 
-    Event(const string &id, Scenario &scene) :
+    Event(const string &id) :
         Base(id),
-        m_scenario(scene),
         m_happened(false)
     {}
 
@@ -76,7 +73,7 @@ public:
     bool happened()
     { return m_happened; }
 
-    static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene);
+    static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
     static void selected(arg_t item_ptr);
 };
 

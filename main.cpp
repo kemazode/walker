@@ -14,7 +14,6 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <fstream>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -22,17 +21,11 @@
 #include <cstring>
 #include <csignal>
 #include <cerrno>
-#include <memory>
-#include "scene.hpp"
-#include "utils.hpp"
 #include "ui.hpp"
 
-// At any given time, we employ only one scenario
-static std::unique_ptr<Scenario> scenario = nullptr;
-
 static void sig_winch(const int signo);
-static void init_dirs();
 static void mkdir_parents(const char *dir);
+static void init_dirs();
 
 int main()
 {    
@@ -67,27 +60,31 @@ void sig_winch(const int signo)
 
 void init_dirs()
 {
-    const char * home = std::getenv("HOME");
+    const char *home = getenv("HOME");
 
-    if (home == nullptr) {
+    if (!home) {
         window_push(BUILD_ERROR, "HOME variable is not set.");
         return;
     }
 
-    string scens = home,
-           gener = home;
+    char path[F_COUNT][PATH_MAX];
 
-    scens = scens + '/' + F_SCENARIOS;
-    gener = gener + '/' + F_GENERATIONS;
+    for (int i = 0; i < F_COUNT; ++i) {
+        strcat(path[i], home);
+        strcat(path[i], "/");
+    }
 
-    std::ifstream f;
+    strcat(path[0], F_SCENARIOS);
+    strcat(path[1], F_GENERATIONS);
 
-    for (auto &fn : { scens, gener })
+    FILE *f;
+
+    for (int i = 0; i < F_COUNT; ++i)
     {
-        f.open(fn);
-        if (f.is_open())
-            f.close();
-        else mkdir_parents(fn.c_str());
+        f = fopen(path[i], "r");
+        if (f)
+            fclose(f);
+        else mkdir_parents(path[i]);
     }
 
 }
@@ -114,114 +111,3 @@ void mkdir_parents(const char *dir)
     mkdir(tmp, S_IRWXU);
 }
 
-
-void scenario_init(arg_t arg)
-{
-    char* scene_load = reinterpret_cast<char *>(arg);
-
-    auto location = window_get_location(build[BUILD_GAME].position);
-
-    try {        
-        scenario.reset(new Scenario(scene_load, location.lines, location.cols));
-
-    } catch(const game_error &error)  {
-        window_push(BUILD_ERROR, error.what());
-        return;
-    }
-    
-    window_push(BUILD_GAME);
-    scenario->render();
-}
-
-void scenario_move_player_x(arg_t arg)
-{ scenario->move_player(int(arg), 0); }
-
-void scenario_move_player_y(arg_t arg)
-{ scenario->move_player(0, int(arg)); }
-
-void scenario_move_view_x(arg_t arg)
-{ scenario->move_view(int(arg), 0); }
-
-void scenario_move_view_y(arg_t arg)
-{ scenario->move_view(0, int(arg)); }
-
-void scenario_generate(arg_t arg)
-{
-    string fil;
-
-    /* Remove C_SIZES */
-    window_pop();
-
-    try {
-
-        /* Square-shaped map */
-        fil = Map::generate(int(arg), int(arg));
-
-    } catch (const game_error& error) {
-      window_push(BUILD_ERROR, error.what());
-      return;
-    }
-    
-    window_push(BUILD_OKAY, "Map was successfully generated to " + fil);
-}
-
-void scenario_load()
-{
-    const char * home = std::getenv("HOME");
-
-    if (home == nullptr) {
-        window_push(BUILD_ERROR, "HOME variable is not set.");
-        return;
-    }
-
-    string dir = home;
-    dir = dir + '/' + F_SCENARIOS;
-
-    vector<unique_ptr<char[]>> paths;
-    vector<unique_ptr<char[]>> names;
-
-    DIR *dp;
-    struct dirent *dirp;
-
-    if((dp  = opendir(dir.c_str())) == nullptr) {
-        window_push(BUILD_ERROR, string(strerror(errno)) + " \"" + dir + "\".");
-        return;
-    }
-    while  ( (dirp = readdir(dp)) != nullptr )
-        if (dirp->d_type & DT_REG) {
-            //files.emplace_back(dir + dirp->d_name);
-            string path = dir + dirp->d_name;
-            paths.emplace_back (new char[path.size() + 1]);
-            strcpy(paths.back().get(), path.c_str());
-
-            names.emplace_back (new char[strlen(dirp->d_name) + 1]);
-            strcpy(names.back().get(), dirp->d_name);
-          }
-
-    closedir(dp);
-
-    if (paths.empty()) {
-        window_push(BUILD_ERROR, "No files in \"" + dir + "\".");
-        return;
-      }
-
-    shared_ptr<item[]> load_menu(new item[paths.size() + 1]);
-
-
-    for (size_t i = 0; i < paths.size(); ++i)
-        load_menu.get()[i] =
-        {
-          names[i].get(),
-          { fun_t(scenario_init), arg_t(paths[i].get()) }
-        };
-    load_menu.get()[paths.size()] = {};
-
-    window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
-                                       "Select the scenario:",
-                                       "Scenarios"));
-
-    /* Exit when a choice window a scenario will close
-     * and may be free of memory */
-    while(window_has(wptr))
-        window_hook();
-}

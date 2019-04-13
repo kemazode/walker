@@ -14,11 +14,24 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <fstream>
+#include <memory>
+#include <dirent.h>
+
+#include "map.hpp"
 #include "ui.hpp"
+#include "scene.hpp"
+
+using std::unique_ptr;
+
+/* Wrappers */
+static void map_generate(arg_t);
+static void scenario_menu();
+static void scenario_init(arg_t);
 
 static item menu_main[] =
 {
-  item("Start New Game", {fun_t(scenario_load), 0}),
+  item("Start New Game", {fun_t(scenario_menu), 0}),
   item("Create Map",     {window_push, BUILD_MAP_CREATOR}),
   item("Scoreboard"),
   item("Options"),
@@ -47,9 +60,9 @@ static item menu_map_creator[] =
 
 static item menu_map_sizes[] =
 {
-  item("100x100", {scenario_generate, 100}),
-  item("250x250", {scenario_generate, 250}),
-  item("500x500", {scenario_generate, 500}),
+  item("100x100", {map_generate, 100}),
+  item("250x250", {map_generate, 250}),
+  item("500x500", {map_generate, 500}),
   {nullptr, {nullptr , 0}}
 };
 
@@ -144,3 +157,103 @@ builder build[] =
   builder(POSITION_SMALL, menus[MENU_MAP_SIZES],   hooks[HOOKS_MENU], descs[DESC_MAP_SIZES],   titles[TITLE_MAP_SIZES]),
   builder(POSITION_SMALL, menus[MENU_OKAY],        hooks[HOOKS_MENU], nullptr,                 titles[TITLE_ERROR]),
 };
+
+
+void scenario_init(arg_t arg)
+{
+    char* scene = reinterpret_cast<char *>(arg);
+
+    auto location = window_get_location(build[BUILD_GAME].position);
+
+    try {
+        scenario_load(scene, window_print, location.lines, location.cols);
+
+    } catch(const game_error &error)  {
+        window_push(BUILD_ERROR, error.what());
+        return;
+    }
+
+    window_push(BUILD_GAME);
+    scenario_unlock();
+}
+
+void map_generate(arg_t arg)
+{
+    string fil;
+
+    /* Remove C_SIZES */
+    window_pop();
+
+    try {
+
+        /* Square-shaped map */
+        fil = Map::generate(int(arg), int(arg));
+
+    } catch (const game_error& error) {
+      window_push(BUILD_ERROR, error.what());
+      return;
+    }
+
+    window_push(BUILD_OKAY, "Map was successfully generated to " + fil);
+}
+
+void scenario_menu()
+{
+    const char * home = std::getenv("HOME");
+
+    if (home == nullptr) {
+        window_push(BUILD_ERROR, "HOME variable is not set.");
+        return;
+    }
+
+    string dir = home;
+    dir = dir + '/' + F_SCENARIOS;
+
+    vector<unique_ptr<char[]>> paths;
+    vector<unique_ptr<char[]>> names;
+
+    DIR *dp;
+    struct dirent *dirp;
+
+    if((dp  = opendir(dir.c_str())) == nullptr) {
+        window_push(BUILD_ERROR, string(strerror(errno)) + " \"" + dir + "\".");
+        return;
+    }
+    while  ( (dirp = readdir(dp)) != nullptr )
+        if (dirp->d_type & DT_REG) {
+            //files.emplace_back(dir + dirp->d_name);
+            string path = dir + dirp->d_name;
+            paths.emplace_back (new char[path.size() + 1]);
+            strcpy(paths.back().get(), path.c_str());
+
+            names.emplace_back (new char[strlen(dirp->d_name) + 1]);
+            strcpy(names.back().get(), dirp->d_name);
+          }
+
+    closedir(dp);
+
+    if (paths.empty()) {
+        window_push(BUILD_ERROR, "No files in \"" + dir + "\".");
+        return;
+      }
+
+    unique_ptr<item[]> load_menu(new item[paths.size() + 1]);
+
+
+    for (size_t i = 0; i < paths.size(); ++i)
+        load_menu.get()[i] =
+        {
+          names[i].get(),
+          { fun_t(scenario_init), arg_t(paths[i].get()) }
+        };
+    load_menu.get()[paths.size()] = {};
+
+    window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
+                                       "Select the scenario:",
+                                       "Scenarios"));
+
+    /* Exit when a choice window a scenario will close
+     * and may be free of memory */
+    while(window_has(wptr))
+        window_hook();
+}

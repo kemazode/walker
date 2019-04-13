@@ -38,6 +38,7 @@
 
 #define MYCOLOR COLOR_BLUE
 
+#define F_COUNT 2
 #define F_SCENARIOS ".config/walker/scenarios/"
 #define F_GENERATIONS ".config/walker/generations/"
 

@@ -66,15 +66,6 @@ enum build
     BUILD_END,
 };
 
-
-// Functions for working with the scenario
-void scenario_move_player_x(arg_t);
-void scenario_move_player_y(arg_t);
-void scenario_move_view_x  (arg_t);
-void scenario_move_view_y  (arg_t);
-void scenario_generate     (arg_t);
-void scenario_load              ();
-
 void init_builder(void);
 
 extern item *menus[];

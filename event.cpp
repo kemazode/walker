@@ -15,6 +15,8 @@
 */
 
 #include <yaml.h>
+#include <memory>
+using std::unique_ptr;
 
 #include "scene.hpp"
 #include "event.hpp"
@@ -26,9 +28,9 @@ static void parse_string_from_yaml    (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml  (const yaml_node_t *node, position p);
 
 /* Dynamic alloc */
-Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc, Scenario &scene)
+Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
-    auto event = new Event(id, scene);
+    auto event = new Event(id);
 
     event->m_title = "Event";
     event->m_position = POSITION_SMALL;
@@ -74,21 +76,21 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 
 void Event::test()
 {
-    if (m_scenario.parse_conditions(m_conditions.begin(), m_conditions.end()))
+    if (scenario_parse_conditions(m_conditions.begin(), m_conditions.end()))
     {
         m_happened = true;
 
         if (m_message.empty()) {
-            m_scenario.parse_commands(m_commands);
+            scenario_parse_commands(m_commands);
         } else {
-            shared_ptr<item[]> menu(new item[m_items.size() + 1]);
+            unique_ptr<item[]> menu(new item[m_items.size() + 1]);
 
             for (size_t i = 0; i < m_items.size(); ++i) {
                 m_items[i].event = this;
                 menu.get()[i] =
                 {
                   m_items[i].label.c_str(),
-                  { selected, arg_t(&m_items[i]) }
+                  { selected, arg_t(&m_items[i].commands) }
                 };
             }
             menu.get()[m_items.size()] = {};
@@ -104,10 +106,10 @@ void Event::test()
 
 void Event::selected(arg_t item_ptr)
 {
-    auto item = reinterpret_cast<Item *>(item_ptr);
+    auto commands = reinterpret_cast<Commands *>(item_ptr);
 
     /* Execute commands assigned to the item */
-    item->event->m_scenario.parse_commands(item->commands);
+    scenario_parse_commands(*commands);
 }
 
 void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Commands &cmds)

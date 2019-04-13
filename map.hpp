@@ -34,10 +34,10 @@ public:
   void push(const string &s);
   void decorate();
 
-  const vector<text>& gettexts() const
+  const vector<text>& get_map() const
   { return m_lines; }
 
-  vector<text>& gettexts()
+  vector<text>& get_map()
   { return m_lines; }
 
   int width() const
@@ -52,10 +52,10 @@ public:
   void sety(int y)
   { m_y = y; }
 
-  int getx() const
+  int x() const
   { return m_x; }
 
-  int gety() const
+  int y() const
   { return m_y; }
 
 };

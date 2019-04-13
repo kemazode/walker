@@ -251,24 +251,23 @@ void window_hook()
 
 void window_print(const vector<text> &vec, int x, int y)
 {
-    if (vec.empty() || !top_window) return;
-
-    int text_h = top_window->sub_window_text? getmaxy(top_window->sub_window_text) - getbegy(top_window->sub_window_text) + 1 : 0;
-
+    if (vec.empty() || !top_window) return;    
+    int text_h =
+        top_window->sub_window_text? getmaxy(top_window->sub_window_text) -
+                                     getbegy(top_window->sub_window_text) + 1 : 0;
     struct location loc_w = window_get_location();
-
     int xend = x + loc_w.cols;
     int yend = y + loc_w.lines;
 
-    if (text_h != loc_w.lines) {
+    if (text_h != loc_w.lines)
+      {
         if (top_window->sub_window_text)
-            wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
+          wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
         else
-            top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH);
-    }
+          top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH);
+      }
 
     wmove(top_window->sub_window_text, 0, 0);
-
 
     int h = int(vec.size());
     int w = int(vec.at(0).lenght);
@@ -277,55 +276,15 @@ void window_print(const vector<text> &vec, int x, int y)
     for (int i = y; i < yend; ++i)
         for (int j = x; j < xend; ++j)
         {
-            if (i >= h || j >= w) {
+            if (i >= h || j >= w)
+              {
                 waddch(top_window->sub_window_text, '\n');
                 break;
-            }
+              }
             waddcchar(top_window->sub_window_text, &vec.at(size_t(i)).cstr[j]);
         }
 
     window_refresh();
-}
-
-void window_print(const struct text *text)
-{
-    if (!top_window) return;
-
-    struct location loc_w = window_get_location();
-    int cth = top_window->sub_window_text?
-                getmaxy(top_window->sub_window_text) - getbegy(top_window->sub_window_text) + 1
-              : 0;
-    int th  = text_height(text, loc_w.cols - 2*TEXT_BORDER_INDENT_X);
-
-    if (th != cth) {
-        if (top_window->sub_window_menu) {
-
-            int it_c = item_count(top_window->menu);
-            int menu_h = (it_c < loc_w.lines - th - 1)? it_c : loc_w.lines - th - 1;
-
-            unpost_menu(top_window->menu);
-
-            delwin(top_window->sub_window_menu);
-
-            top_window->sub_window_menu = derwin(top_window->window, menu_h,
-                             loc_w.cols, th + LINES_BORDERS_WIDTH + 1,
-                             COLS_BORDERS_WIDTH);
-
-            set_menu_win(top_window->menu, top_window->window);
-            set_menu_sub(top_window->menu, top_window->sub_window_menu);
-            post_menu(top_window->menu);
-        }
-
-        if (top_window->sub_window_text) {
-            wresize(top_window->sub_window_text, th, loc_w.cols);
-        } else {
-            top_window->sub_window_text = derwin(top_window->window, th, loc_w.cols - 2*TEXT_BORDER_INDENT_X, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-            wclear(top_window->sub_window_text);
-        }
-    }
-
-    mvwaddtext(top_window->sub_window_text, 0, 0, text);
-    refresh();
 }
 
 void window_set(const struct builder &builder)

@@ -126,7 +126,7 @@ void window_clear(void);
 bool window_has(struct window *);
 window *window_top(void);
 
-void window_print(const struct text *);
+/* For map rendering */
 void window_print(const vector<text> &, int x, int y);
 
 struct location window_get_location(enum position);

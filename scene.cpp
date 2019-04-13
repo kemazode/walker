@@ -574,66 +574,32 @@ void scenario::parse_yaml() {
 
 void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yaml_document_t *doc)
 {
-  if (!strcmp(section_type, YAML_SECTION_OBJECTS))
+  if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
+  for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
-      if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
+      auto node_key = yaml_document_get_node(doc, pair->key);
+      auto node_value = yaml_document_get_node(doc, pair->value);
 
-      for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
+      if (node_key->type != YAML_SCALAR_NODE)
+        throw game_error(DEFAULT_PARSE_ERROR);
+
+      const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
+
+      if (!strcmp(section_type, YAML_SECTION_OBJECTS))
         {
-          auto node_key = yaml_document_get_node(doc, pair->key);
-          auto node_value = yaml_document_get_node(doc, pair->value);
-
-          if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(DEFAULT_PARSE_ERROR);
-
-          const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
-
           m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
-          add_id(key);
-
           if (!strcmp(key, DEFAULT_PLAYER_ID))
             m_player = prev(m_objects.end());
         }
-    }
-  else if (!strcmp(section_type, YAML_SECTION_MAPS))
-    {
-      if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
-
-      for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
-        {
-          auto node_key = yaml_document_get_node(doc, pair->key);
-          auto node_value = yaml_document_get_node(doc, pair->value);
-
-          if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(DEFAULT_PARSE_ERROR);
-
-          const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
-
+      else if (!strcmp(section_type, YAML_SECTION_MAPS))
           m_source = Map::create_from_yaml(key, node_value, doc);
-          add_id(key);
-        }
-    }
-  else if (!strcmp(section_type, YAML_SECTION_EVENTS))
-    {
-      if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
-
-      for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
-        {
-          auto node_key = yaml_document_get_node(doc, pair->key);
-          auto node_value = yaml_document_get_node(doc, pair->value);
-
-          if (node_key->type != YAML_SCALAR_NODE)
-            throw game_error(DEFAULT_PARSE_ERROR);
-
-          const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
-
+      else if (!strcmp(section_type, YAML_SECTION_EVENTS))
           m_events.emplace_front( Event::create_from_yaml(key, node_value, doc) );
-          add_id(key);
-        }
-    }
-  else
-    throw game_error( string("Found unknown structure \"") + section_type + "\".");
+      else
+        throw game_error( string("Found unknown structure \"") + section_type + "\".");
 
+       add_id(key);
+    }
 }
 
 void scenario::add_id(const string &id)

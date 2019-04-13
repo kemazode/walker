@@ -14,16 +14,17 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <yaml.h>
+
 #include "scenario_constants.hpp"
 #include "object.hpp"
-#include "yaml.h"
 
-Object* Object::create_from_type(const string &id, const string& obj, int x, int y)
+Object* Object::create_from_type(const string &id, const string& type, int x, int y)
 {
-    if (obj == "Dwarf")
+    if (type == DWARF_TYPE)
         return new Dwarf(id, x, y);
     else
-        throw game_error("Unknown object type \"" + obj + "\".");
+        throw game_error("Unknown object type \"" + type + "\".");
 }
 
 Object* Object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
@@ -47,16 +48,15 @@ Object* Object::create_from_yaml(const string &id, const yaml_node_t *node, yaml
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
         const char *value = reinterpret_cast<const char *>(node_value->data.scalar.value);
 
-        if (!strcmp(key, "type"))
+        if (!strcmp(key, YAML_OBJECT_TYPE))
             type = value;
-        else if (!strcmp(key, "x"))
+        else if (!strcmp(key, YAML_OBJECT_POSITION_X))
             x = atoi(value);
-        else if (!strcmp(key, "y"))
+        else if (!strcmp(key, YAML_OBJECT_POSITION_Y))
             y = atoi(value);
         else
             throw game_error( string("Found unknown field \"") + key + "\" in the object structure.");
     }
-
     return create_from_type(id, type, x, y);
 }
 

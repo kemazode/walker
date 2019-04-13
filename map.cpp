@@ -110,11 +110,11 @@ Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_docume
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
         const char *value = reinterpret_cast<const char *>(node_value->data.scalar.value);
 
-        if (!strcmp(key, "width"))
+        if (!strcmp(key, YAML_MAP_WIDTH))
             w = atoi(value);
-        else if (!strcmp(key, "height"))
+        else if (!strcmp(key, YAML_MAP_HEIGHT))
             h = atoi(value);
-        else if (!strcmp(key, "text"))
+        else if (!strcmp(key, YAML_MAP_TEXT))
             map = value;
         else
             throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");

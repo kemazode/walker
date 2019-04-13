@@ -34,8 +34,8 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 {
     auto event = new Event(id);
 
-    event->m_title = "Event";
-    event->m_position = POSITION_SMALL;
+    event->m_title    = DEFAULT_EVENT_TITLE;
+    event->m_position = DEFAULT_EVENT_SIZE;
 
     if (!node)
         throw game_error("Empty map structure.");
@@ -52,22 +52,22 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-        if (!strcmp("if", key)) {
+        if (!strcmp(YAML_EVENT_CONDITIONS, key)) {
             parse_conditions_from_yaml(node_value, doc, event->m_conditions);
 
-        } else if (!strcmp("title", key)) {
+        } else if (!strcmp(YAML_EVENT_TITLE, key)) {
             parse_string_from_yaml(node_value, event->m_title);
 
-        } else if (!strcmp("size", key)) {
+        } else if (!strcmp(YAML_EVENT_SIZE, key)) {
             parse_position_from_yaml(node_value, event->m_position);
 
-        } else if (!strcmp("message", key)) {
+        } else if (!strcmp(YAML_EVENT_MESSAGE, key)) {
             parse_string_from_yaml(node_value, event->m_message);
 
-        } else if (!strcmp("items", key)) {
+        } else if (!strcmp(YAML_EVENT_ITEMS, key)) {
             parse_items_from_yaml(node_value, doc, event->m_items);
 
-        } else if (!strcmp("do", key)) {
+        } else if (!strcmp(YAML_EVENT_COMMANDS, key)) {
             parse_commands_from_yaml(node_value, doc, event->m_commands);
         } else
             throw game_error( string("Invalid field in event structure: \"") + key + "\"");
@@ -168,9 +168,9 @@ void parse_items_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Items 
 
              const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
-            if (!strcmp("label", key)) {
+            if (!strcmp(YAML_EVENT_ITEM_LABEL, key)) {
                 parse_string_from_yaml(node_value, item.label);
-            } else if (!strcmp("do", key)) {
+            } else if (!strcmp(YAML_EVENT_ITEM_COMMANDS, key)) {
                 parse_commands_from_yaml(node_value, doc, item.commands);
             } else
                 throw game_error( string("Invalid field in event structure: \"") + key + "\"");
@@ -194,11 +194,11 @@ static void parse_position_from_yaml(const yaml_node_t *node, position p)
 
    const char *value = reinterpret_cast<const char *>(node->data.scalar.value);
 
-   if (!strcmp(value, "Small")) {
+   if (!strcmp(value, YAML_WINDOW_SIZE_SMALL)) {
        p = POSITION_SMALL;
-   } else if (!strcmp(value, "Average")) {
+   } else if (!strcmp(value, YAML_WINDOW_SIZE_AVERAGE)) {
        p = POSITION_AVERAGE;
-   } else if (!strcmp(value, "Full")) {
+   } else if (!strcmp(value, YAML_WINDOW_SIZE_FULL)) {
        p = POSITION_FULL;
    } else
        throw game_error(string("Invalid position value \"") + value + "\" in the event structure.");

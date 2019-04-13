@@ -46,7 +46,7 @@ public:
         m_obstacles(i),
         m_unvisible(u) {}
 
-    static Object* create_from_type(const string &id, const string& obj, int x, int y);
+    static Object* create_from_type(const string &id, const string& type, int x, int y);
     static Object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
     virtual ~Object() {}

@@ -18,6 +18,7 @@
 #include <fstream>
 #include <yaml.h>
 
+#include "scenario_constants.hpp"
 #include "map.hpp"
 #include "utils.hpp"
 #include "perlin.hpp"

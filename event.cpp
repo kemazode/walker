@@ -16,10 +16,12 @@
 
 #include <yaml.h>
 #include <memory>
-using std::unique_ptr;
 
+#include "scenario_constants.hpp"
 #include "scene.hpp"
 #include "event.hpp"
+
+using std::unique_ptr;
 
 static void parse_commands_from_yaml  (const yaml_node_t *node, yaml_document_t *doc, Commands &cmds);
 static void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds);

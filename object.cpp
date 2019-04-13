@@ -14,6 +14,7 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include "scenario_constants.hpp"
 #include "object.hpp"
 #include "yaml.h"
 
@@ -74,12 +75,6 @@ bool Object::visible(char path) const
 {
     return m_unvisible.find(path) == string::npos;
 }
-
-constexpr const int    DWARF_VISION_RANGE = 10;
-constexpr const char  *DWARF_OBSTACLES     = "~#";
-constexpr const char  *DWARF_UNVISIBLE     = "#";
-constexpr const char   DWARF_SYMBOL        = '@';
-constexpr const attr_t DWARF_ATTR          = A_BOLD;
 
 Dwarf::Dwarf(const string &id, int x, int y)
     : Object(id,

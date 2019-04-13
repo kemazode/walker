@@ -51,13 +51,13 @@ class scenario {
   int                                m_lines;
   int                                m_cols;
   bool                               m_lock;
-  Map                                m_source;
-  Map                                m_render;
+  Map                                m_source      = Map(DEFAULT_MAP_ID, "", 0, 0);
+  Map                                m_render      = Map(DEFAULT_MAP_ID, "", 0, 0);
   render_f                           m_render_f;
   list<unique_ptr<Event>>            m_events;
   list<unique_ptr<Object>>           m_objects;
-  list<unique_ptr<Object>>::iterator m_player;
-  vector<string>                     m_identifiers;
+  list<unique_ptr<Object>>::iterator m_player      = m_objects.end();
+  vector<string>                     m_identifiers = {RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID};
 
   list<unique_ptr<Object>>::const_iterator find_object(const string& id) const;
   list<unique_ptr<Event>>::const_iterator  find_event(const string& id) const;
@@ -79,8 +79,6 @@ class scenario {
   bool parse_condition(const string& cond) const;
   void parse_yaml();
   void parse_yaml(const char *section_type, const yaml_node_t *node, yaml_document_t *doc);
-  //void parse_yaml(const yaml_node_t *node, yaml_document_t *doc);
-  //void parse_yaml(const char *, const yaml_node_t *node, yaml_document_t *doc);
   void parse_command  (const string& comm);
   int height() const { return m_source.height(); }
   int width() const { return m_source.width(); }
@@ -106,13 +104,7 @@ public:
 static unique_ptr<scenario> single_scenario;
 
 scenario::scenario(const string &f, render_f r_f, int l, int c) :
-  m_lines(l),
-  m_cols(c),
-  m_lock(true),
-  m_source(DEFAULT_MAP_ID, "", 0, 0),
-  m_render(DEFAULT_MAP_ID, "", 0, 0),
-  m_render_f(r_f),
-  m_identifiers({RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID})
+  m_lines(l), m_cols(c), m_render_f(r_f)
 {
   load(f);
 
@@ -563,6 +555,9 @@ void scenario::parse_yaml() {
         parse_yaml(key, yaml_document_get_node(&document, pair->value), &document);
       }
 
+    if (m_player == m_objects.end())
+      throw game_error("Player structure doesn't exists.");
+
     yaml_document_delete(&document);
     return;
 
@@ -575,6 +570,7 @@ void scenario::parse_yaml() {
 void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yaml_document_t *doc)
 {
   if (node->type != YAML_MAPPING_NODE) throw game_error(DEFAULT_PARSE_ERROR);
+
   for (auto pair = node->data.mapping.pairs.start; pair < node->data.mapping.pairs.top; ++pair)
     {
       auto node_key = yaml_document_get_node(doc, pair->key);
@@ -589,7 +585,7 @@ void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yam
         {
           m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
           if (!strcmp(key, DEFAULT_PLAYER_ID))
-            m_player = prev(m_objects.end());
+              m_player = prev(m_objects.end());
         }
       else if (!strcmp(section_type, YAML_SECTION_MAPS))
           m_source = Map::create_from_yaml(key, node_value, doc);

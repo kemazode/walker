@@ -56,22 +56,18 @@ class Event : public Base {
     string      m_title;
     position    m_position;
 
-    bool m_happened;
+    bool m_happened = false;
 
-    Event(const string &id) :
-        Base(id),
-        m_happened(false)
-    {}
+    Event(const string &id) : Base(id) {}
 
 public:
 
     /* If the check is successful, then execute actions */
     void test();
-    bool happened()
-    { return m_happened; }
+    bool happened() { return m_happened; }
 
     static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
-    static void selected(arg_t item_ptr);
+    static void selected(arg_t commands_ptr);
 };
 
 #endif // EVENT_HPP

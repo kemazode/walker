@@ -105,9 +105,9 @@ void Event::test()
     }
 }
 
-void Event::selected(arg_t item_ptr)
+void Event::selected(arg_t commands_ptr)
 {
-    auto commands = reinterpret_cast<Commands *>(item_ptr);
+    auto commands = reinterpret_cast<Commands *>(commands_ptr);
 
     /* Execute commands assigned to the item */
     scenario_parse_commands(*commands);

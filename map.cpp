@@ -37,12 +37,13 @@ static string nextgen(const string& s, int count);
 static char textures[] = { '~', '#', '\'', '`' };
 
 /* For non-static Map::decorate() */
+
 static unordered_map<char, attr_t> map_attrs = {
-    {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | A_INVIS},
-    {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | A_INVIS},
-    {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | A_INVIS},
-    {'`',  PAIR(COLOR_GREEN, COLOR_BLACK) | A_INVIS},
-    {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | A_INVIS}
+    {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE},
+    {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+    {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+    {'`',  PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+    {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE}
 };
 
 void Map::push(const string &s)
@@ -125,13 +126,13 @@ Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_docume
 
 void Map::decorate()
 {
-    char temp;
-    try {
-        for (auto& line : m_lines) for (size_t i = 0; i < line.lenght; ++i)
-          line.cstr[i].attribute = map_attrs.at(temp = line.cstr[i].symbol);
-
-    } catch (std::out_of_range &) {
-        throw game_error( string("Sorry, but file has incorrect symbol '") + temp + "'.");
+  for (auto& line : m_lines) for (size_t i = 0; i < line.lenght; ++i)
+    {
+      auto attr = map_attrs.find(line.cstr[i].symbol);
+      if (attr != map_attrs.end())
+        line.cstr[i].attribute = attr->second;
+      else
+        line.cstr[i].attribute = DEFAULT_TILE_ATTRIBUTE;
     }
 }
 

@@ -19,14 +19,17 @@
 #include "window.hpp"
 #include "utils.hpp"
 
-#define LINES_BORDERS 2
-#define COLS_BORDERS 2
-#define SUB_WIN_Y 1
-#define SUB_WIN_X 1
-#define TEXT_X 1
+#define LINES_BORDERS_WIDTH 1
+#define COLS_BORDERS_WIDTH 1
+
+#define LINES_BORDERS (LINES_BORDERS_WIDTH*2)
+#define COLS_BORDERS (COLS_BORDERS_WIDTH*2)
+
+#define TEXT_BORDER_INDENT_X COLS_BORDERS_WIDTH
+
 #define TITLE_SEPARATION " "
 #define ITEM_DESCRIPTION " "
-#define ITEM_SELECT " > "
+#define ITEM_SELECT " >>---> "
 
 static int text_height(const struct text *t, int freecols);
 static int waddtext(WINDOW *w, const struct text *t);
@@ -85,14 +88,14 @@ window *window_push(const struct builder &builder)
 
     wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
 
-    int nextline = SUB_WIN_Y;
+    int nextline = LINES_BORDERS_WIDTH;
 
     if (builder.text.lenght)
     {
-        int text_h = text_height(&builder.text, loc_w.cols - 2*TEXT_X);
+        int text_h = text_height(&builder.text, loc_w.cols - 2*TEXT_BORDER_INDENT_X);
 
         /* Text drawing */
-        new_w->sub_window_text = derwin(new_w->window, text_h, loc_w.cols - 2*TEXT_X, nextline, SUB_WIN_X + TEXT_X);
+        new_w->sub_window_text = derwin(new_w->window, text_h, loc_w.cols - 2*TEXT_BORDER_INDENT_X, nextline, COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
         mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text);
 
         nextline += text_h;
@@ -109,7 +112,7 @@ window *window_push(const struct builder &builder)
         int menu_h = (new_w->items_c < loc_w.lines - nextline)?
                       new_w->items_c : loc_w.lines - nextline;
 
-        new_w->sub_window_menu = derwin(new_w->window, menu_h, loc_w.cols, nextline, SUB_WIN_X);
+        new_w->sub_window_menu = derwin(new_w->window, menu_h, loc_w.cols, nextline, COLS_BORDERS_WIDTH);
 
         /* Create items from Menu* m */
         new_w->items = new ITEM *[size_t(new_w->items_c) + 1];
@@ -258,7 +261,7 @@ void window_print(const vector<text> &vec, int x, int y)
         if (top_window->sub_window_text)
             wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
         else
-            top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, SUB_WIN_Y, SUB_WIN_X);
+            top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH);
     }
 
     wmove(top_window->sub_window_text, 0, 0);
@@ -289,7 +292,7 @@ void window_print(const struct text *text)
     int cth = top_window->sub_window_text?
                 getmaxy(top_window->sub_window_text) - getbegy(top_window->sub_window_text) + 1
               : 0;
-    int th  = text_height(text, loc_w.cols - 2*TEXT_X);
+    int th  = text_height(text, loc_w.cols - 2*TEXT_BORDER_INDENT_X);
 
     if (th != cth) {
         if (top_window->sub_window_menu) {
@@ -302,8 +305,8 @@ void window_print(const struct text *text)
             delwin(top_window->sub_window_menu);
 
             top_window->sub_window_menu = derwin(top_window->window, menu_h,
-                             loc_w.cols, th + SUB_WIN_Y + 1,
-                             SUB_WIN_X);
+                             loc_w.cols, th + LINES_BORDERS_WIDTH + 1,
+                             COLS_BORDERS_WIDTH);
 
             set_menu_win(top_window->menu, top_window->window);
             set_menu_sub(top_window->menu, top_window->sub_window_menu);
@@ -313,7 +316,7 @@ void window_print(const struct text *text)
         if (top_window->sub_window_text) {
             wresize(top_window->sub_window_text, th, loc_w.cols);
         } else {
-            top_window->sub_window_text = derwin(top_window->window, th, loc_w.cols - 2*TEXT_X, SUB_WIN_Y, SUB_WIN_X + TEXT_X);
+            top_window->sub_window_text = derwin(top_window->window, th, loc_w.cols - 2*TEXT_BORDER_INDENT_X, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
             wclear(top_window->sub_window_text);
         }
     }

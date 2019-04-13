@@ -38,6 +38,8 @@ constexpr const char *YAML_WINDOW_SIZE_SMALL   = "Small";
 constexpr const char *YAML_WINDOW_SIZE_AVERAGE = "Average";
 constexpr const char *YAML_WINDOW_SIZE_FULL    = "Full";
 
+constexpr int DEFAULT_TILE_ATTRIBUTE = A_INVIS;
+
 constexpr const char  *DWARF_TYPE         = "Dwarf";
 constexpr int          DWARF_VISION_RANGE = 10;
 constexpr const char  *DWARF_OBSTACLES    = "~#";

@@ -86,7 +86,6 @@ void Event::test()
             unique_ptr<item[]> menu(new item[m_items.size() + 1]);
 
             for (size_t i = 0; i < m_items.size(); ++i) {
-                m_items[i].event = this;
                 menu.get()[i] =
                 {
                   m_items[i].label.c_str(),

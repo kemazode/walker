@@ -43,9 +43,6 @@ class Event;
 struct Item {
     string label;
     Commands commands;
-
-    /* Pointer to base event */
-    const Event *event = nullptr;
 };
 
 using Items = vector<Item>;

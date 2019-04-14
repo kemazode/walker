@@ -267,7 +267,7 @@ void scenario::turn()
   render();
 
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
-    (*iter)->test();
+    if (iter->get()) (*iter)->test();
 }
 
 void scenario::render()

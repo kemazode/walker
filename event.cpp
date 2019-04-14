@@ -36,9 +36,9 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 {
     auto event = new Event(id);
 
-    event->m_title    = DEFAULT_EVENT_TITLE;
-    event->m_position = DEFAULT_EVENT_SIZE;
-    event->m_image    = DEFAULT_IMAGE;
+    event->m_title     = DEFAULT_EVENT_TITLE;
+    event->m_position  = DEFAULT_EVENT_SIZE;
+    event->m_image     = DEFAULT_IMAGE;
     event->m_image_pos = DEFAULT_IMAGE_POSITION;
 
     if (!node)

@@ -130,7 +130,11 @@ window *window_push(const struct builder &builder)
                                            COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
           nextline += (text_h + 1);
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
-          wborder(new_w->sub_window_image, ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ');
+
+          if (!(builder.image_option & OPTION_BORDERLESS))
+            wborder(new_w->sub_window_image, ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ');
+          else /* Because image hasn't bottom border */
+            --nextline;
         }
       else if (builder.image_pos == IMAGE_POSITION_LEFT)
         {
@@ -164,7 +168,7 @@ window *window_push(const struct builder &builder)
           +-----------------+-----------------+
           */
 
-          int image_x = loc_w.cols + (loc_w.cols - image_width)/2;
+          int image_x = loc_w.cols + (loc_w.cols - image_width)/2 - COLS_BORDERS_WIDTH;
           int image_y = (loc_w.lines - text_h)/2 + LINES_BORDERS_WIDTH;
 
           /* Set to center */
@@ -175,6 +179,7 @@ window *window_push(const struct builder &builder)
                                            image_x);
 
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
+          //box(new_w->sub_window_image, 0,0 );
         }
     }
   else
@@ -249,7 +254,7 @@ window *window_push(const struct builder &builder)
       post_menu(new_w->menu);
 
       /* Print description */
-      auto item = (struct item *) item_userptr(current_item(new_w->menu));
+      auto item = reinterpret_cast<struct item *>(item_userptr(current_item(new_w->menu)));
       if (item->description)
         mvwaddstr(new_w->sub_window_desc, 0, 0, item->description);
 
@@ -287,7 +292,7 @@ void window_pop()
     /* set_panel_userptr takes userprt as "const void *",
          * so if we want to get userptr for changing we need to reset const qualifier.
          */
-    new_top_window = (struct window *) panel_userptr(panel_b);
+    new_top_window = reinterpret_cast<struct window *>(const_cast<void *>(panel_userptr(panel_b)));
 
   if (top_window->menu) {
       unpost_menu(top_window->menu);
@@ -331,14 +336,14 @@ void window_menu_driver(int req)
 
   switch (req) {
     case REQ_EXEC_ITEM:
-      auto item = (struct item *) item_userptr(current_item(top_window->menu));
+      auto item = reinterpret_cast<struct item *>(item_userptr(current_item(top_window->menu)));
       if (item) item->action();
       return;
     }
 
   menu_driver(top_window->menu, req);
 
-  auto item = (struct item *) item_userptr(current_item(top_window->menu));
+  auto item = reinterpret_cast<struct item *>(item_userptr(current_item(top_window->menu)));
   wclear(top_window->sub_window_desc);
   if (item->description)
     mvwaddstr(top_window->sub_window_desc, 0, 0, item->description);
@@ -418,10 +423,8 @@ bool window_has(struct window *window)
   const struct window *temp = top_window;
 
   while (temp)
-    if (temp == window)
-      return true;
-    else
-      temp = (const struct window *) panel_userptr(panel_below(temp->panel));
+    if (temp == window) return true;
+    else temp = reinterpret_cast<const struct window *>(panel_userptr(panel_below(temp->panel)));
 
   return false;
 }

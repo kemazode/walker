@@ -17,6 +17,8 @@ enum image
   IMAGE_HORSEBACK_FIGHT,
   IMAGE_MOUNTAINS,
   IMAGE_PIKEMAN,
+  IMAGE_SCROLL_AND_INK_PEN,
+  IMAGE_OPEN_BOOK,
 };
 
 extern const text *images[];

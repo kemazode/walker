@@ -105,6 +105,7 @@ struct builder
   const struct text  *image;
   enum image_position image_pos;
   enum format         image_format;
+  enum option         image_option;
 
   builder(enum position p,
           struct item *i,
@@ -115,7 +116,8 @@ struct builder
           enum format ef = FORMAT_CENTER,
           const struct text *im = nullptr,
           enum image_position impos = IMAGE_POSITION_TOP,
-          enum format imf = FORMAT_CENTER_RIGHT)
+          enum format imf = FORMAT_CENTER_RIGHT,
+          enum option imo = OPTION_NORMAL)
     : position(p),
       items(i),
       hooks(h),
@@ -125,7 +127,8 @@ struct builder
       text_format(ef),
       image(im),
       image_pos(impos),
-      image_format(imf) {}
+      image_format(imf),
+      image_option(imo) {}
 };
 
 window *window_push(const builder &builder);

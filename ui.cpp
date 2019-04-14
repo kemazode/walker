@@ -309,9 +309,15 @@ void scenario_menu()
         };
     load_menu.get()[paths.size()] = {};
 
-    window *wptr = window_push(builder(POSITION_AVERAGE, load_menu.get(), hooks[HOOKS_MENU],
+    window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
                                        "Select the scenario:",
-                                       "Scenarios"));
+                                       "Scenarios",
+                                       OPTION_NORMAL,
+                                       FORMAT_CENTER,
+                                       images[IMAGE_OPEN_BOOK],
+                                       IMAGE_POSITION_LEFT,
+                                       FORMAT_CENTER_RIGHT,
+                                       OPTION_BORDERLESS));
 
     /* Exit when a choice window a scenario will close
      * and may be free of memory */

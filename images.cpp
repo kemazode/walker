@@ -78,6 +78,28 @@ static text pikeman =
     "       |      /____/\\____\\          \n"
     "                                        ";
 
+static text scroll_and_ink_pen =
+    "                              \n"
+    "(\\                           \n"
+    " \'\\                         \n"
+    "  \'\\     __________         \n"
+    "  / '|   ()_________)         \n"
+    "  \\ '/    \\ ~~~~~~~~ \\     \n"
+    "    \\       \\ ~~~~~~   \\   \n"
+    "    ==).      \\__________\\  \n"
+    "   (__)       ()__________)   \n"
+    "                                ";
+
+static text open_book =
+"                          \n"
+"      ______ ______       \n"
+"    _/      Y      \\_    \n"
+"   // ~~ ~~ | ~~ ~  \\\\  \n"
+"  // ~ ~ ~~ | ~~~ ~~ \\\\ \n"
+" //________.|.________\\\\\n"
+"`----------`-'----------' \n"
+"                            ";
+
 const text *images[] =
 {
   nullptr,
@@ -86,4 +108,6 @@ const text *images[] =
   &horseback_fight,
   &mountains,
   &pikeman,
+  &scroll_and_ink_pen,
+  &open_book,
 };

@@ -315,9 +315,7 @@ void scenario_menu()
                                        OPTION_NORMAL,
                                        FORMAT_CENTER,
                                        images[IMAGE_OPEN_BOOK],
-                                       IMAGE_POSITION_LEFT,
-                                       FORMAT_CENTER_RIGHT,
-                                       OPTION_BORDERLESS));
+                                       IMAGE_POSITION_LEFT));
 
     /* Exit when a choice window a scenario will close
      * and may be free of memory */

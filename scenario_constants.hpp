@@ -28,13 +28,12 @@ constexpr const char *YAML_MAP_WIDTH  = "width";
 constexpr const char *YAML_MAP_HEIGHT = "height";
 constexpr const char *YAML_MAP_TEXT   = "text";
 
-constexpr const char *DEFAULT_PARSE_ERROR       = "YAML configuration does not match the scenario specification.";
-constexpr const char *DEFAULT_EVENT_TITLE       = "Event";
-constexpr position    DEFAULT_EVENT_SIZE        = POSITION_SMALL;
-constexpr const char *DEFAULT_PLAYER_ID         = "player";
-constexpr const char *DEFAULT_MAP_ID            = "map";
-constexpr int         DEFAULT_TILE_ATTRIBUTE    = A_INVIS;
-constexpr image       DEFAULT_IMAGE             = IMAGE_NONE;
+constexpr const char    *DEFAULT_PARSE_ERROR       = "YAML configuration does not match the scenario specification.";
+constexpr const char    *DEFAULT_EVENT_TITLE       = "Event";
+constexpr position       DEFAULT_EVENT_SIZE        = POSITION_SMALL;
+constexpr const char    *DEFAULT_PLAYER_ID         = "player";
+constexpr const char    *DEFAULT_MAP_ID            = "map";
+constexpr int            DEFAULT_TILE_ATTRIBUTE    = A_INVIS;
 constexpr image_position DEFAULT_IMAGE_POSITION = IMAGE_POSITION_TOP;
 
 constexpr const char *RESERVED_WINDOW_ID   = "window";

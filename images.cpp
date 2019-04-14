@@ -1,4 +1,6 @@
 #include "images.hpp"
+#include "utils.hpp"
+#include <fstream>
 
 static text cow =
     "                    \n"
@@ -32,8 +34,7 @@ static text horseback_fight =
     "  -`___-\\  |` ./O    \n"
     "  ''-(  /`--) `\\/\\  \n"
     "     7/`       /|     \n"
-    "     \\       /  \\   \n"
-    "                        ";
+    "     \\       /  \\   \n";
 
 static text mountains =
     "                                                                   \n"
@@ -75,8 +76,7 @@ static text pikeman =
     "       |        |  ||  |              \n"
     "       |        |  ||  |              \n"
     "       |       _\\.:||:./_            \n"
-    "       |      /____/\\____\\          \n"
-    "                                        ";
+    "       |      /____/\\____\\          \n";
 
 static text scroll_and_ink_pen =
     "                              \n"
@@ -87,22 +87,19 @@ static text scroll_and_ink_pen =
     "  \\ '/    \\ ~~~~~~~~ \\     \n"
     "    \\       \\ ~~~~~~   \\   \n"
     "    ==).      \\__________\\  \n"
-    "   (__)       ()__________)   \n"
-    "                                ";
+    "   (__)       ()__________)   \n";
 
 static text open_book =
-"                          \n"
-"      ______ ______       \n"
-"    _/      Y      \\_    \n"
-"   // ~~ ~~ | ~~ ~  \\\\  \n"
-"  // ~ ~ ~~ | ~~~ ~~ \\\\ \n"
-" //________.|.________\\\\\n"
-"`----------`-'----------' \n"
-"                            ";
+    "                          \n"
+    "      ______ ______       \n"
+    "    _/      Y      \\_    \n"
+    "   // ~~ ~~ | ~~ ~  \\\\  \n"
+    "  // ~ ~ ~~ | ~~~ ~~ \\\\ \n"
+    " //________.|.________\\\\\n"
+    "`----------`-'----------' \n";
 
 const text *images[] =
 {
-  nullptr,
   &cow,
   &centaur,
   &horseback_fight,
@@ -111,3 +108,37 @@ const text *images[] =
   &scroll_and_ink_pen,
   &open_book,
 };
+
+using std::fstream;
+
+text images_find(const char *image)
+{
+  const char * home = std::getenv("HOME");
+
+  if (home == nullptr)
+      throw game_error("HOME variable is not set.");
+
+  string path = home;
+  path = path + "/" + F_SCENARIOS + image;
+
+  fstream f(path);
+  string im;
+
+  if (!f.good())
+    throw game_error(string("We can't open image file \"") + image + "\".");
+
+  size_t max_line = 0;
+  while (f.good())
+    {
+
+      string temp;
+      getline(f, temp);
+      im += temp;
+      im += '\n';
+      if (temp.size() > max_line) max_line = temp.size();
+    }
+
+  im.insert(im.begin(), '\n');
+  im.insert(im.begin(), max_line, ' ');
+  return im;
+}

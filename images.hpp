@@ -11,7 +11,6 @@ enum image_position
 
 enum image
 {
-  IMAGE_NONE,
   IMAGE_COW,
   IMAGE_CENTAUR,
   IMAGE_HORSEBACK_FIGHT,
@@ -22,5 +21,6 @@ enum image
 };
 
 extern const text *images[];
+text images_find(const char *image);
 
 #endif // IMAGES_HPP

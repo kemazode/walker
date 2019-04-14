@@ -28,7 +28,7 @@ static void parse_conditions_from_yaml     (const yaml_node_t *node, yaml_docume
 static void parse_items_from_yaml          (const yaml_node_t *node, yaml_document_t *doc, Items &items);
 static void parse_string_from_yaml         (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml       (const yaml_node_t *node, position &p);
-static void parse_image_from_yaml          (const yaml_node_t *node, image &im);
+static void parse_image_from_yaml          (const yaml_node_t *node, text &im);
 static void parse_image_position_from_yaml (const yaml_node_t *node, image_position &im_pos);
 
 /* Dynamic alloc */
@@ -38,7 +38,6 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 
     event->m_title     = DEFAULT_EVENT_TITLE;
     event->m_position  = DEFAULT_EVENT_SIZE;
-    event->m_image     = DEFAULT_IMAGE;
     event->m_image_pos = DEFAULT_IMAGE_POSITION;
 
     if (!node)
@@ -106,7 +105,7 @@ void Event::test()
                                                 m_title,
                                                 OPTION_NORMAL,
                                                 FORMAT_CENTER,
-                                                images[m_image],
+                                                &m_image,
                                                 m_image_pos));
 
             /* While wptr is exist, menu must not be destroyed */
@@ -216,23 +215,13 @@ static void parse_position_from_yaml(const yaml_node_t *node, position &p)
 
 }
 
-static void parse_image_from_yaml(const yaml_node_t *node, image &im)
+static void parse_image_from_yaml(const yaml_node_t *node, text &im)
 {
     if (node->type != YAML_SCALAR_NODE)
         throw game_error("Incorrectly \"image\" field in the event structure.");
 
    const char *value = reinterpret_cast<const char *>(node->data.scalar.value);
-
-   if (!strcmp(value, YAML_IMAGE_COW))
-     im = IMAGE_COW;
-   else if (!strcmp(value, YAML_IMAGE_CENTAUR))
-     im = IMAGE_CENTAUR;
-   else if (!strcmp(value, YAML_IMAGE_MOUNTAINS))
-     im = IMAGE_MOUNTAINS;
-   else if (!strcmp(value, YAML_IMAGE_PIKEMAN))
-     im  = IMAGE_PIKEMAN;
-   else
-     throw game_error(string("Invalid image value \"") + value + "\" in the image structure.");
+   im = images_find(value);
 }
 
 static void parse_image_position_from_yaml (const yaml_node_t *node, image_position &im_pos)

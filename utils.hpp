@@ -68,6 +68,8 @@ struct cchar
 
 struct text
 {
+  text() = default;
+
   text(const char *str, attr_t attr) {
     lenght = str? strlen(str) : 0;
     cstr = new cchar[lenght];
@@ -108,8 +110,8 @@ struct text
   ~text()
   { delete [] cstr; }
 
-  struct cchar *cstr;
-  size_t lenght;
+  struct cchar *cstr = nullptr;
+  size_t lenght = 0;
 };
 
 class game_error : public runtime_error {

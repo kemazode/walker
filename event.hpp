@@ -56,7 +56,7 @@ class Event : public Base {
     string      m_message;
     string      m_title;
     position    m_position;
-    image       m_image;
+    text        m_image;
     image_position m_image_pos;
 
     bool m_happened = false;

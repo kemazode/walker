@@ -95,9 +95,11 @@ window *window_push(const struct builder &builder)
   int nextline = LINES_BORDERS_WIDTH + TEXT_BORDER_INDENT_Y;
   int sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
 
-  if (builder.image)
+  if (builder.image && builder.image->lenght)
     {
-      int text_h = text_height(builder.image, sub_window_width);
+      int text_h = 0;
+      for (int i = 0; i < int(builder.image->lenght); ++i)
+        if (builder.image->cstr[i].symbol == '\n') ++text_h;
 
       if (builder.image_pos == IMAGE_POSITION_TOP) {
 
@@ -128,13 +130,8 @@ window *window_push(const struct builder &builder)
                                            sub_window_width,
                                            nextline,
                                            COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-          nextline += (text_h + 1);
+          nextline += text_h + 1;
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
-
-          if (!(builder.image_option & OPTION_BORDERLESS))
-            wborder(new_w->sub_window_image, ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ');
-          else /* Because image hasn't bottom border */
-            --nextline;
         }
       else if (builder.image_pos == IMAGE_POSITION_LEFT)
         {

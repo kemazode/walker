@@ -37,6 +37,7 @@
 #include <panel.h>
 #include <menu.h>
 
+#include "images.hpp"
 #include "utils.hpp"
 
 #define REQ_EXEC_ITEM (MAX_MENU_COMMAND + 1)
@@ -94,15 +95,16 @@ struct hook
 
 struct builder
 {
-  enum position position;
-  struct item *items;
-  struct hook *hooks;
-  struct text text;
-  struct text title;
-  const struct text *image;
-  enum option options;
-  enum format image_format;
-  enum format text_format;
+  enum position       position;
+  struct item        *items;
+  struct hook        *hooks;
+  struct text         text;
+  struct text         title;
+  enum option         options;
+  enum format         text_format;
+  const struct text  *image;
+  enum image_position image_pos;
+  enum format         image_format;
 
   builder(enum position p,
           struct item *i,
@@ -112,16 +114,18 @@ struct builder
           enum option o = OPTION_NORMAL,
           enum format ef = FORMAT_CENTER,
           const struct text *im = nullptr,
+          enum image_position impos = IMAGE_POSITION_TOP,
           enum format imf = FORMAT_CENTER_RIGHT)
     : position(p),
       items(i),
       hooks(h),
       text(t),
       title(e),
-      image(im),
       options(o),
-      image_format(imf),
-      text_format(ef) {}
+      text_format(ef),
+      image(im),
+      image_pos(impos),
+      image_format(imf) {}
 };
 
 window *window_push(const builder &builder);

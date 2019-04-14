@@ -22,6 +22,7 @@
 #include <forward_list>
 #include <variant>
 
+#include "images.hpp"
 #include "utils.hpp"
 #include "ui.hpp"
 #include "base.hpp"
@@ -55,6 +56,8 @@ class Event : public Base {
     string      m_message;
     string      m_title;
     position    m_position;
+    image       m_image;
+    image_position m_image_pos;
 
     bool m_happened = false;
 

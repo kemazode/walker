@@ -97,18 +97,85 @@ window *window_push(const struct builder &builder)
 
   if (builder.image)
     {
-      /* "--nextline" because image hasn't top border */
-      --nextline;
       int text_h = text_height(builder.image, sub_window_width);
 
-      new_w->sub_window_image = derwin(new_w->window,
-                                       text_h,
-                                       sub_window_width,
-                                       nextline,
-                                       COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-      nextline += (text_h + 1);
-      mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
-      wborder(new_w->sub_window_image, ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ');
+      if (builder.image_pos == IMAGE_POSITION_TOP) {
+
+          /*
+          +-----------------------------------+
+          |                                   |
+          | +-------------------------------+ |
+          | |                               | |
+          | |             image             | |
+          | |                               | |
+          | |                               | |
+          | +-------------------------------+ |
+          | _________________________________ |
+          |                                   |
+          |               title               |
+          |                                   |
+          |    subscription...                |
+          |                                   |
+          |    - item                         |
+          |                                   |
+          +-----------------------------------+
+          */
+          /* "--nextline" because image hasn't top border */
+          --nextline;
+
+          new_w->sub_window_image = derwin(new_w->window,
+                                           text_h,
+                                           sub_window_width,
+                                           nextline,
+                                           COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
+          nextline += (text_h + 1);
+          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
+          wborder(new_w->sub_window_image, ' ', ' ', ' ', '_', ' ', ' ', ' ', ' ');
+        }
+      else if (builder.image_pos == IMAGE_POSITION_LEFT)
+        {
+          /* Determine the width of the image */
+          int image_width = int(builder.image->lenght) + 1;
+          for (int i = 0; i < int(builder.image->lenght); ++i)
+            if (builder.image->cstr[i].symbol == '\n')
+              {
+                image_width = i;
+                break;
+              }
+          ++image_width;
+
+          loc_w.cols  /= 2;
+
+          /*  Recompute the standard width of the subwindow */
+          sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
+
+          /*
+          +-----------------+-----------------+
+          |                 |                 |
+          |      title      |   +---------+   |
+          |                 |   |         |   |
+          |  subscription.  |   |  image  |   |
+          |                 |   |         |   |
+          |  - item         |   |         |   |
+          |                 |   |         |   |
+          |  - item         |   |         |   |
+          |                 |   +---------+   |
+          |                 |                 |
+          +-----------------+-----------------+
+          */
+
+          int image_x = loc_w.cols + (loc_w.cols - image_width)/2;
+          int image_y = (loc_w.lines - text_h)/2 + LINES_BORDERS_WIDTH;
+
+          /* Set to center */
+          new_w->sub_window_image = derwin(new_w->window,
+                                           text_h,
+                                           image_width + COLS_BORDERS,
+                                           image_y,
+                                           image_x);
+
+          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
+        }
     }
   else
     new_w->sub_window_image = nullptr;
@@ -393,7 +460,7 @@ int waddtext(WINDOW *w, const struct text *t, format f)
     {
       int width = getmaxx(w) - getcurx(w);
       bool indent_exists = false;
-      int next_newline = int(t->lenght) - 1;
+      int next_line = int(t->lenght) - 1;
 
       for (int i = 0; i < int(t->lenght); ++i)
         {
@@ -402,20 +469,20 @@ int waddtext(WINDOW *w, const struct text *t, format f)
             {
               indent_exists = false;
 
-              next_newline = int(t->lenght) - i;
+              next_line = int(t->lenght) - i;
               for (int n = i; n < int(t->lenght); ++n)
                 if (t->cstr[n].symbol == '\n')
                   {
-                    next_newline = n - i;
+                    next_line = n - i;
                     break;
                   }
             }
 
-          if (next_newline <= width && !indent_exists)
+          if (next_line <= width && !indent_exists)
             {
               indent_exists = true;
 
-              int indent_lenght = (width - next_newline)/2;
+              int indent_lenght = (width - next_line)/2;
               for (int i = 0; i <= indent_lenght; ++i)
                 rc = waddch(w, ' ');
             }

@@ -73,25 +73,6 @@ window *window_push(const struct builder &builder)
                            loc_w.y,
                            loc_w.x);
 
-  /* Set window decorations */
-  wattron(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
-
-  if ( !(builder.options & OPTION_BORDERLESS))
-       box(new_w->window, 0, 0);
-
-  /* Window title */
-  if (builder.title.lenght)
-    {
-      wattron(new_w->window, A_REVERSE);
-      wmove(new_w->window, 0, loc_w.cols/2 - int(builder.title.lenght/2));
-      waddstr(new_w->window, TITLE_SEPARATION);
-      waddtext(new_w->window, &builder.title, FORMAT_RIGHT);
-      waddstr(new_w->window, TITLE_SEPARATION);
-      wattroff(new_w->window, A_REVERSE);
-    }
-
-  wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
-
   int nextline = LINES_BORDERS_WIDTH + TEXT_BORDER_INDENT_Y;
   int sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
 
@@ -176,7 +157,7 @@ window *window_push(const struct builder &builder)
                                            image_x);
 
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
-          //box(new_w->sub_window_image, 0,0 );
+          //box(new_w->sub_window_image, 0,0);
         }
     }
   else
@@ -261,6 +242,25 @@ window *window_push(const struct builder &builder)
       new_w->sub_window_menu = nullptr;
       new_w->sub_window_desc = nullptr;
     }
+
+  /* Set window decorations */
+  wattron(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
+
+  if ( !(builder.options & OPTION_BORDERLESS))
+       box(new_w->window, 0, 0);
+
+  /* Window title */
+  if (builder.title.lenght)
+    {
+      wattron(new_w->window, A_REVERSE);
+      wmove(new_w->window, 0, loc_w.cols/2 - int(builder.title.lenght/2));
+      waddstr(new_w->window, TITLE_SEPARATION);
+      waddtext(new_w->window, &builder.title, FORMAT_RIGHT);
+      waddstr(new_w->window, TITLE_SEPARATION);
+      wattroff(new_w->window, A_REVERSE);
+    }
+
+  wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
 
   /* Set hooks */
   new_w->hooks   = builder.hooks;

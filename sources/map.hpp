@@ -13,7 +13,7 @@ using std::string;
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class Map  : public Base {
+class map  : public base {
     int m_x, m_y;
 
     int m_width, m_height;
@@ -21,9 +21,9 @@ class Map  : public Base {
 
 public:
 
-  Map(const string &id, const string &map, int w, int h);
+  map(const string &id, const string &map, int w, int h);
 
-  static Map create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+  static map create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
   static void generate(const string &f, int w, int h);
   static string generate(int w, int h);

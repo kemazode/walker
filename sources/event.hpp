@@ -20,8 +20,6 @@
 #include <string>
 #include <vector>
 #include <memory>
-#include <forward_list>
-#include <variant>
 
 #include "images.hpp"
 #include "utils.hpp"
@@ -29,50 +27,45 @@
 #include "base.hpp"
 
 using std::unique_ptr;
-using std::forward_list;
 using std::vector;
 using std::string;
-using std::variant;
 
-using Commands = vector<string>;
+using event_instructions = vector<string>;
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class scenario;
-class Event;
+struct event_condition;
+using event_conditions = unique_ptr<event_condition[]>;
 
-struct Condition;
-using Conditions = unique_ptr<Condition[]>;
-
-struct Condition {
+struct event_condition {
   string cond;
   size_t size;
-  Conditions next;
+  event_conditions next;
 };
 
-struct Item {
+struct event_item {
     string label;
-    Commands commands;
+    event_instructions instructions;
 };
 
-using Items = vector<Item>;
+using event_items = vector<event_item>;
 
-class Event : public Base {
+class event : public base {
 
-    Conditions     m_conditions;
-    size_t         m_conditions_size;
-    Items          m_items;
-    Commands       m_commands;
-    string         m_message;
-    string         m_title;
-    position       m_position;
-    text           m_image;
-    image_position m_image_pos;
+    event_conditions   m_conditions;
+    size_t             m_conditions_size;
+    event_items        m_items;
+    event_instructions m_instructions;
+    string             m_message;
+    string             m_title;
+    position           m_position;
+    text               m_image;
+    image_position     m_image_pos;
 
     bool m_happened = false;
 
-    Event(const string &id) : Base(id) {}
+    event(const string &id) : base(id) {}
 
 public:
 
@@ -80,8 +73,8 @@ public:
     void test();
     bool happened() { return m_happened; }
 
-    static Event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
-    static void selected(arg_t commands_ptr);
+    static event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+    static void selected(arg_t instructions_ptr);
 };
 
 #endif // EVENT_HPP

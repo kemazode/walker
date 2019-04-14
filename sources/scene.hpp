@@ -36,7 +36,7 @@ void scenario_move_view_x(arg_t);
 void scenario_move_view_y(arg_t);
 void scenario_move_player_x(arg_t);
 void scenario_move_player_y(arg_t);
-bool scenario_parse_conditions(const Conditions &conds, size_t size);
-void scenario_parse_commands(const Commands& commands);
+bool scenario_parse_conditions(const event_conditions &conds, size_t size);
+void scenario_parse_instructions(const event_instructions& instructions);
 
 #endif // SCENE_HPP

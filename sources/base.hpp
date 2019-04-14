@@ -21,10 +21,10 @@
 
 using std::string;
 
-class Base {
+class base {
     string m_id;
 public:
-    Base(const string &id) : m_id(id) {}
+    base(const string &id) : m_id(id) {}
 
     const string& id() const
     { return m_id; }

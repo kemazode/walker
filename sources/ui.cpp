@@ -93,7 +93,7 @@ static hook hooks_game[] =
   hook(KEY_LEFT,  {scenario_move_player_x, -1}),
   hook(KEY_RIGHT, {scenario_move_player_x,  1}),
 
-  // Map moving
+  // map moving
   hook('k', {scenario_move_view_y,  1}),
   hook('i', {scenario_move_view_y, -1}),
   hook('j', {scenario_move_view_x, -1}),
@@ -248,7 +248,7 @@ void map_generate(arg_t arg)
     try {
 
         /* Square-shaped map */
-        fil = Map::generate(int(arg), int(arg));
+        fil = map::generate(int(arg), int(arg));
 
     } catch (const game_error& error) {
       window_push(BUILD_ERROR, error.what());

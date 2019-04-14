@@ -36,7 +36,7 @@ static string nextgen(const string& s, int count);
 /* Textures to generate */
 static char textures[] = { '~', '#', '\'', '`' };
 
-/* For non-static Map::decorate() */
+/* For non-static map::decorate() */
 
 static unordered_map<char, attr_t> map_attrs = {
     {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE},
@@ -46,7 +46,7 @@ static unordered_map<char, attr_t> map_attrs = {
     {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE}
 };
 
-void Map::push(const string &s)
+void map::push(const string &s)
 {
     if (s.empty())
         throw game_error("Line " + to_string(m_height + 1)
@@ -66,7 +66,7 @@ void Map::push(const string &s)
     m_lines.emplace_back(s);
 }
 
-Map::Map(const string &id, const string &map, int w, int h) : Base(id)
+map::map(const string &id, const string &map, int w, int h) : base(id)
 {
 //    if (map.empty())
 //        throw game_error("Map is empty.");
@@ -89,9 +89,9 @@ Map::Map(const string &id, const string &map, int w, int h) : Base(id)
     }
 }
 
-Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+map map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
-    string map;
+    string text;
     int w = 0;
     int h = 0;
 
@@ -116,15 +116,15 @@ Map Map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_docume
         else if (!strcmp(key, YAML_MAP_HEIGHT))
             h = atoi(value);
         else if (!strcmp(key, YAML_MAP_TEXT))
-            map = value;
+            text = value;
         else
             throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
-    return Map(id, map, w, h);
+    return map(id, text, w, h);
 }
 
-void Map::decorate()
+void map::decorate()
 {
   for (auto& line : m_lines) for (size_t i = 0; i < line.lenght; ++i)
     {
@@ -136,7 +136,7 @@ void Map::decorate()
     }
 }
 
-void Map::generate(const string& f, int w, int h)
+void map::generate(const string& f, int w, int h)
 {
     srand(unsigned(time(nullptr)));
     perlin_set_seed(rand());
@@ -162,7 +162,7 @@ void Map::generate(const string& f, int w, int h)
     }
 }
 
-string Map::generate(int w, int h)
+string map::generate(int w, int h)
 {
     const char* home = getenv("HOME");
 

@@ -19,15 +19,15 @@
 #include "scenario_constants.hpp"
 #include "object.hpp"
 
-Object* Object::create_from_type(const string &id, const string& type, int x, int y)
+object* object::create_from_type(const string &id, const string& type, int x, int y)
 {
     if (type == DWARF_TYPE)
-        return new Dwarf(id, x, y);
+        return new dwarf(id, x, y);
     else
         throw game_error("Unknown object type \"" + type + "\".");
 }
 
-Object* Object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+object* object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
     string type;
     int x = 0, y = 0;
@@ -60,7 +60,7 @@ Object* Object::create_from_yaml(const string &id, const yaml_node_t *node, yaml
     return create_from_type(id, type, x, y);
 }
 
-bool Object::move(int x, int y, char path)
+bool object::move(int x, int y, char path)
 {
     if (m_obstacles.find(path) == string::npos)
     {
@@ -71,13 +71,13 @@ bool Object::move(int x, int y, char path)
     return false;
 }
 
-bool Object::visible(char path) const
+bool object::visible(char path) const
 {
     return m_unvisible.find(path) == string::npos;
 }
 
-Dwarf::Dwarf(const string &id, int x, int y)
-    : Object(id,
+dwarf::dwarf(const string &id, int x, int y)
+    : object(id,
              x,
              y,
              DWARF_VISION_RANGE,

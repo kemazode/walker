@@ -26,7 +26,7 @@ using std::string;
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class Object : public Base {
+class object : public base {
 
     int m_x, m_y;
     int m_vision_range;
@@ -37,8 +37,8 @@ class Object : public Base {
     string m_unvisible;
 public:
 
-    Object(const string &id, int x, int y, int v, const cchar &c, const string &i, const string &u)
-      : Base(id),
+    object(const string &id, int x, int y, int v, const cchar &c, const string &i, const string &u)
+      : base(id),
         m_x(x),
         m_y(y),
         m_vision_range(v),
@@ -46,10 +46,10 @@ public:
         m_obstacles(i),
         m_unvisible(u) {}
 
-    static Object* create_from_type(const string &id, const string& type, int x, int y);
-    static Object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+    static object* create_from_type(const string &id, const string& type, int x, int y);
+    static object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
-    virtual ~Object() {}
+    virtual ~object() {}
 
     virtual bool move(int x, int y, char path);
     virtual bool visible(char path) const;
@@ -60,9 +60,9 @@ public:
     const cchar& symbol() const { return m_symbol;  }
 };
 
-class Dwarf : public Object {
+class dwarf : public object {
 public:    
-    Dwarf(const string &id, int x, int y);
+    dwarf(const string &id, int x, int y);
 };
 
 #endif // OBJECT_HPP

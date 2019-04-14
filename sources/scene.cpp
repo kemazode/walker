@@ -51,16 +51,16 @@ class scenario {
   int                                m_lines;
   int                                m_cols;
   bool                               m_lock = false;
-  Map                                m_source      = Map(DEFAULT_MAP_ID, "", 0, 0);
-  Map                                m_render      = Map(DEFAULT_MAP_ID, "", 0, 0);
+  map                                m_source      = map(DEFAULT_MAP_ID, "", 0, 0);
+  map                                m_render      = map(DEFAULT_MAP_ID, "", 0, 0);
   render_f                           m_render_f;
-  list<unique_ptr<Event>>            m_events;
-  list<unique_ptr<Object>>           m_objects;
-  list<unique_ptr<Object>>::iterator m_player      = m_objects.end();
+  list<unique_ptr<event>>            m_events;
+  list<unique_ptr<object>>           m_objects;
+  list<unique_ptr<object>>::iterator m_player      = m_objects.end();
   vector<string>                     m_identifiers = {RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID};
 
-  list<unique_ptr<Object>>::const_iterator find_object(const string& id) const;
-  list<unique_ptr<Event>>::const_iterator  find_event(const string& id) const;
+  list<unique_ptr<object>>::const_iterator find_object(const string& id) const;
+  list<unique_ptr<event>>::const_iterator  find_event(const string& id) const;
 
   bool abroad(int x, int y) const
   { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
@@ -70,7 +70,7 @@ class scenario {
   { return y >= m_source.height() || y < 0; }
 
   void add_id(const string &id);
-  void render_los(const Object& viewer);
+  void render_los(const object& viewer);
   void render_set_visible(int x, int y);
   void source_set_detected(int x, int y);
   void turn();
@@ -96,8 +96,8 @@ public:
   void move_player(int x, int y); // m_lock
   void move_view  (int x, int y); // m_lock
 
-  bool parse_conditions(const Conditions &conds, size_t size) const;
-  void parse_commands  (const Commands &commands); // m_lock
+  bool parse_conditions(const event_conditions &conds, size_t size) const;
+  void parse_instructions  (const event_instructions &instructions); // m_lock
 };
 
 
@@ -171,7 +171,7 @@ void scenario::source_set_detected(int x, int y)
   m_source.at(x, y).attribute |= A_DIM;
 }
 
-void scenario::render_los(const Object &viewer)
+void scenario::render_los(const object &viewer)
 {
   using std::hypot;
 
@@ -286,7 +286,7 @@ void scenario::render()
   m_render_f(m_render.get_map(), x(), y());
 }
 
-list<unique_ptr<Object>>::const_iterator scenario::find_object(const string& id) const
+list<unique_ptr<object>>::const_iterator scenario::find_object(const string& id) const
 {
   for (auto iter = m_objects.begin(); iter != m_objects.end(); ++iter)
     {
@@ -296,7 +296,7 @@ list<unique_ptr<Object>>::const_iterator scenario::find_object(const string& id)
   return m_objects.end();
 }
 
-list<unique_ptr<Event>>::const_iterator scenario::find_event(const string& id) const
+list<unique_ptr<event>>::const_iterator scenario::find_event(const string& id) const
 {
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
     {
@@ -424,7 +424,7 @@ void scenario::parse_command(const string& comm)
     }
 }
 
-bool scenario::parse_conditions(const Conditions &conds, size_t size) const
+bool scenario::parse_conditions(const event_conditions &conds, size_t size) const
 {
   bool result = 0;
   bool and_sequence = 1;
@@ -456,10 +456,10 @@ bool scenario::parse_conditions(const Conditions &conds, size_t size) const
   return result;
 }
 
-void scenario::parse_commands(const Commands &commands)
+void scenario::parse_instructions(const event_instructions &instructions)
 {
   if (m_lock) return;
-  for (auto &f : commands) parse_command(f);
+  for (auto &f : instructions) parse_command(f);
 }
 
 void scenario::parse_yaml() {
@@ -593,14 +593,14 @@ void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yam
 
       if (!strcmp(section_type, YAML_SECTION_OBJECTS))
         {
-          m_objects.emplace_front ( Object::create_from_yaml(key, node_value, doc) );
+          m_objects.emplace_front ( object::create_from_yaml(key, node_value, doc) );
           if (!strcmp(key, DEFAULT_PLAYER_ID))
               m_player = prev(m_objects.end());
         }
       else if (!strcmp(section_type, YAML_SECTION_MAPS))
-          m_source = Map::create_from_yaml(key, node_value, doc);
+          m_source = map::create_from_yaml(key, node_value, doc);
       else if (!strcmp(section_type, YAML_SECTION_EVENTS))
-          m_events.emplace_front( Event::create_from_yaml(key, node_value, doc) );
+          m_events.emplace_front( event::create_from_yaml(key, node_value, doc) );
       else
         throw game_error( string("Found unknown structure \"") + section_type + "\".");
 
@@ -644,8 +644,8 @@ void scenario_move_player_x(arg_t arg)
 void scenario_move_player_y(arg_t arg)
 { if (single_scenario.get()) single_scenario->move_player(0, int(arg)); }
 
-bool scenario_parse_conditions(const Conditions &conds, size_t size)
+bool scenario_parse_conditions(const event_conditions &conds, size_t size)
 { return single_scenario.get()? single_scenario->parse_conditions(conds, size) : false; }
 
-void scenario_parse_commands(const Commands& commands)
-{ if (single_scenario.get()) single_scenario->parse_commands(commands); }
+void scenario_parse_instructions(const event_instructions& instructions)
+{ if (single_scenario.get()) single_scenario->parse_instructions(instructions); }

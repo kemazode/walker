@@ -130,7 +130,6 @@ text images_find(const char *image)
   size_t max_line = 0;
   while (f.good())
     {
-
       string temp;
       getline(f, temp);
       im += temp;

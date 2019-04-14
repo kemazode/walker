@@ -19,6 +19,7 @@
 
 #include <string>
 #include <vector>
+#include <memory>
 #include <forward_list>
 #include <variant>
 
@@ -27,12 +28,12 @@
 #include "ui.hpp"
 #include "base.hpp"
 
+using std::unique_ptr;
 using std::forward_list;
 using std::vector;
 using std::string;
 using std::variant;
 
-using Conditions = vector<string>;
 using Commands = vector<string>;
 
 typedef struct yaml_node_s yaml_node_t;
@@ -40,6 +41,15 @@ typedef struct yaml_document_s yaml_document_t;
 
 class scenario;
 class Event;
+
+struct Condition;
+using Conditions = unique_ptr<Condition[]>;
+
+struct Condition {
+  string cond;
+  size_t size;
+  Conditions next;
+};
 
 struct Item {
     string label;
@@ -50,13 +60,14 @@ using Items = vector<Item>;
 
 class Event : public Base {
 
-    Conditions  m_conditions;
-    Items       m_items;
-    Commands    m_commands;
-    string      m_message;
-    string      m_title;
-    position    m_position;
-    text        m_image;
+    Conditions     m_conditions;
+    size_t         m_conditions_size;
+    Items          m_items;
+    Commands       m_commands;
+    string         m_message;
+    string         m_title;
+    position       m_position;
+    text           m_image;
     image_position m_image_pos;
 
     bool m_happened = false;

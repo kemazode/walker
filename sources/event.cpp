@@ -24,7 +24,7 @@
 using std::unique_ptr;
 
 static void parse_commands_from_yaml       (const yaml_node_t *node, yaml_document_t *doc, Commands &cmds);
-static void parse_conditions_from_yaml     (const yaml_node_t *node, yaml_document_t *doc, Conditions &conds);
+static void parse_conditions_from_yaml     (const yaml_node_t *node, yaml_document_t *doc, Conditions &conds, size_t &size);
 static void parse_items_from_yaml          (const yaml_node_t *node, yaml_document_t *doc, Items &items);
 static void parse_string_from_yaml         (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml       (const yaml_node_t *node, position &p);
@@ -56,7 +56,7 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
         const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
         if (!strcmp(YAML_EVENT_CONDITIONS, key))
-          parse_conditions_from_yaml(node_value, doc, event->m_conditions);
+          parse_conditions_from_yaml(node_value, doc, event->m_conditions, event->m_conditions_size);
         else if (!strcmp(YAML_EVENT_TITLE, key))
           parse_string_from_yaml(node_value, event->m_title);
         else if (!strcmp(YAML_EVENT_SIZE, key))
@@ -80,7 +80,7 @@ Event* Event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
 
 void Event::test()
 {
-    if (scenario_parse_conditions(m_conditions.begin(), m_conditions.end()))
+    if (scenario_parse_conditions(m_conditions, m_conditions_size))
     {
         m_happened = true;
 
@@ -138,18 +138,29 @@ void parse_commands_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Com
     }
 }
 
-void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds)
+void parse_conditions_from_yaml(const yaml_node_t *node, yaml_document_t *doc, Conditions &conds, size_t &size)
 {
-    if (node->type != YAML_SEQUENCE_NODE)
-        throw game_error("Incorrectly set \"if\" sequence in the event structure.");
+  if (node->type != YAML_SEQUENCE_NODE)
+    throw game_error("Incorrectly set \"if\" sequence in the event structure.");
 
-    for (auto seq = node->data.sequence.items.start; seq < node->data.sequence.items.top; ++seq) {
-        auto seq_value = yaml_document_get_node(doc, *seq);
-        if (seq_value->type != YAML_SCALAR_NODE)
-            throw game_error("Incorrectly set \"if\" sequence in the event structure.");
+  size = size_t(node->data.sequence.items.top - node->data.sequence.items.start);
 
-        const char *value = reinterpret_cast<const char *>(seq_value->data.scalar.value);
-        conds.emplace_back( value );
+  conds.reset(new Condition[size]);
+
+  int i = 0;
+  for (auto seq = node->data.sequence.items.start; seq < node->data.sequence.items.top; ++seq, ++i) {
+      auto seq_value = yaml_document_get_node(doc, *seq);
+
+      if (seq_value->type == YAML_SEQUENCE_NODE)
+        parse_conditions_from_yaml(seq_value, doc, conds.get()[i].next, conds.get()[i].size);
+
+      else if (seq_value->type == YAML_SCALAR_NODE)
+        {
+          const char *value = reinterpret_cast<const char *>(seq_value->data.scalar.value);
+          conds.get()[i].cond = value;
+          conds.get()[i].next = nullptr;
+        }
+      else throw game_error("Incorrectly set \"if\" sequence in the event structure.");
     }
 }
 

@@ -96,7 +96,7 @@ public:
   void move_player(int x, int y); // m_lock
   void move_view  (int x, int y); // m_lock
 
-  bool parse_conditions(const Conditions::iterator &begin, const Conditions::iterator &end) const;
+  bool parse_conditions(const Conditions &conds, size_t size) const;
   void parse_commands  (const Commands &commands); // m_lock
 };
 
@@ -424,24 +424,34 @@ void scenario::parse_command(const string& comm)
     }
 }
 
-bool scenario::parse_conditions(const vector<string>::iterator &begin, const vector<string>::iterator &end) const
+bool scenario::parse_conditions(const Conditions &conds, size_t size) const
 {
   bool result = 0;
   bool and_sequence = 1;
 
-  for (auto i = begin; i != end; ++i)
+  for (size_t i = 0; i < size; ++i)
     {
-      if (*i == "or") {
+      bool condition;
+
+      /* If conds contain other conds, this function will be called recursively */
+      if (conds[i].next)
+        {
+          condition = parse_conditions(conds[i].next, conds[i].size);
+        }
+      else if (conds[i].cond == "or")
+        {
           result += and_sequence;
           and_sequence = 1;
           continue;
         }
-      bool condition;
-      condition = ((*i).back() == '!')?
-            !parse_condition(*i) : parse_condition(*i);
+      else
+        {
+          condition = (conds[i].cond.back() == '!')?
+                !parse_condition(conds[i].cond) :
+                 parse_condition(conds[i].cond);
+        }
       and_sequence *= condition;
     }
-
   result += and_sequence;
   return result;
 }
@@ -634,8 +644,8 @@ void scenario_move_player_x(arg_t arg)
 void scenario_move_player_y(arg_t arg)
 { if (single_scenario.get()) single_scenario->move_player(0, int(arg)); }
 
-bool scenario_parse_conditions(const Conditions::iterator &begin, const Conditions::iterator &end)
-{ return single_scenario.get()? single_scenario->parse_conditions(begin, end) : false; }
+bool scenario_parse_conditions(const Conditions &conds, size_t size)
+{ return single_scenario.get()? single_scenario->parse_conditions(conds, size) : false; }
 
 void scenario_parse_commands(const Commands& commands)
 { if (single_scenario.get()) single_scenario->parse_commands(commands); }

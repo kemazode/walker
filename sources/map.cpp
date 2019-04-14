@@ -23,7 +23,7 @@
 #include "utils.hpp"
 #include "perlin.hpp"
 
-#define F_GENERATE "Generation.txt"
+#define FILE_GENERATE "Generation.txt"
 
 using std::ofstream;
 using std::unordered_map;
@@ -33,95 +33,85 @@ using std::to_string;
 /* Generation (count).txt */
 static string nextgen(const string& s, int count);
 
-/* Textures to generate */
 static char textures[] = { '~', '#', '\'', '`' };
-
-/* For non-static map::decorate() */
-
 static unordered_map<char, attr_t> map_attrs = {
-    {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE},
-    {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
-    {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
-    {'`',  PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
-    {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE}
+  {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE},
+  {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+  {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+  {'`',  PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
+  {'.',  PAIR(COLOR_CYAN, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE}
 };
 
 void map::push(const string &s)
 {
-    if (s.empty())
-        throw game_error("Line " + to_string(m_height + 1)
-                         + " is empty.");
+  if (s.empty())
+    throw game_error("Line " + to_string(m_height + 1)
+                     + " is empty.");
 
-    int slen = int(s.length());
+  int slen = int(s.length());
 
-    if (m_width == 0)
-        m_width = slen;
+  if (m_width == 0)
+    m_width = slen;
 
-    else if (m_width != slen)
-        throw game_error("The lenght of line number " + to_string(m_height + 1) +
-                         " (" + to_string(slen) +
-                         ") does not match the specified length (" +
-                         to_string(m_width) + ").");
-    ++m_height;
-    m_lines.emplace_back(s);
+  else if (m_width != slen)
+    throw game_error("The lenght of line number " + to_string(m_height + 1) +
+                     " (" + to_string(slen) +
+                     ") does not match the specified length (" +
+                     to_string(m_width) + ").");
+  ++m_height;
+  m_lines.emplace_back(s);
 }
 
 map::map(const string &id, const string &map, int w, int h) : base(id)
 {
-//    if (map.empty())
-//        throw game_error("Map is empty.");
-//    else if (w == 0)
-//        throw game_error("Map width is zero.");
-//    else if (h == 0)
-//        throw game_error("Map height is zero.");
+  m_x = 0;
+  m_y = 0;
+  m_height = 0;
+  m_width = w;
 
-    m_x = m_y = 0;
-
-    m_width = w;
-    m_height = 0;
-
-    for (string::size_type pos = 0, newline = 0; h--; pos = (newline + 1) )
+  for (string::size_type pos = 0, newline = 0; h--; pos = (newline + 1) )
     {
-        newline = map.find('\n', pos);
-
-        string &&temp = map.substr(pos, newline - pos);
-        this->push(temp);              
+      newline = map.find('\n', pos);
+      string &&temp = map.substr(pos, newline - pos);
+      this->push(temp);
     }
 }
 
 map map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
-    string text;
-    int w = 0;
-    int h = 0;
+  string text;
+  int w = 0;
+  int h = 0;
 
-    if (!node)
-        throw game_error("Empty map structure.");
-    else if (node->type != YAML_MAPPING_NODE)
-        throw game_error("Invalid map stucture.");
+  if (!node)
+    throw game_error("Empty map structure.");
+  else if (node->type != YAML_MAPPING_NODE)
+    throw game_error("Invalid map stucture.");
 
-    for (auto b = node->data.mapping.pairs.start; b < node->data.mapping.pairs.top; ++b)
+  for (auto b = node->data.mapping.pairs.start; b < node->data.mapping.pairs.top; ++b)
     {
-        auto node_key = yaml_document_get_node(doc, b->key);
-        auto node_value = yaml_document_get_node(doc, b->value);
+      auto node_key = yaml_document_get_node(doc, b->key);
+      auto node_value = yaml_document_get_node(doc, b->value);
 
-        if (node_key->type != YAML_SCALAR_NODE or node_value->type != YAML_SCALAR_NODE)
-            throw game_error("Invalid map structure.");
+      if (node_key->type != YAML_SCALAR_NODE or node_value->type != YAML_SCALAR_NODE)
+        throw game_error("Invalid map structure.");
 
-        const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
-        const char *value = reinterpret_cast<const char *>(node_value->data.scalar.value);
+      const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
+      const char *value = reinterpret_cast<const char *>(node_value->data.scalar.value);
 
-        if (!strcmp(key, YAML_MAP_WIDTH))
-            w = atoi(value);
-        else if (!strcmp(key, YAML_MAP_HEIGHT))
-            h = atoi(value);
-        else if (!strcmp(key, YAML_MAP_TEXT))
-            text = value;
-        else
-            throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
+      if (!strcmp(key, YAML_MAP_WIDTH))
+        w = atoi(value);
+
+      else if (!strcmp(key, YAML_MAP_HEIGHT))
+        h = atoi(value);
+
+      else if (!strcmp(key, YAML_MAP_TEXT))
+        text = value;
+      else
+        throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
-    return map(id, text, w, h);
+  return map(id, text, w, h);
 }
 
 void map::decorate()
@@ -138,62 +128,62 @@ void map::decorate()
 
 void map::generate(const string& f, int w, int h)
 {
-    srand(unsigned(time(nullptr)));
-    perlin_set_seed(rand());
+  srand(unsigned(time(nullptr)));
+  perlin_set_seed(rand());
 
-    ofstream fil;
+  ofstream fil;
 
-    fil.exceptions(std::ios_base::failbit);
+  fil.exceptions(std::ios_base::failbit);
+  try {
+    fil.open(f);
 
-    try {
-        fil.open(f);
-
-        for (int y = 0; y < h; ++y) {
-            for (int x = 0; x < w; ++x) {
-                auto seed = unsigned(perlin2d(x, y, 0.05f, 10) * 10);
-                fil << textures[seed % SIZE(textures)];
-            }
-            fil << '\n';
-        }
-
-    } catch (std::ios::failure &) {
-        if (!fil.is_open()) throw game_error("Can't create file \"" + f + "\".");
-        else throw game_error("Something went wrong when writing to " + f);
-    }
+    for (int y = 0; y < h; ++y)
+      {
+        for (int x = 0; x < w; ++x)
+          {
+            auto seed = unsigned(perlin2d(x, y, 0.05f, 10) * 10);
+            fil << textures[seed % SIZE(textures)];
+          }
+        fil << '\n';
+      }
+  } catch (std::ios::failure &) {
+    if (!fil.is_open()) throw game_error("Can't create file \"" + f + "\".");
+    else throw game_error("Something went wrong when writing to " + f);
+  }
 }
 
 string map::generate(int w, int h)
 {
-    const char* home = getenv("HOME");
+  const char* home = getenv("HOME");
 
-    if (home == nullptr)
-        throw game_error("HOME environment variable not set.");
+  if (home == nullptr)
+    throw game_error("HOME environment variable not set.");
 
-    string folder = home;
-    folder = folder + '/' + F_GENERATIONS;
+  string folder = home;
+  folder = folder + '/' + FILE_GENERATIONS;
 
-    ifstream fil;
-    int count = 0;
-    string filename = F_GENERATE;
+  ifstream fil;
+  int count = 0;
+  string filename = FILE_GENERATE;
 
-    do {
-        fil.close();
-        if (count > 0)
-            filename = nextgen(F_GENERATE, count);
-        fil.open(folder + filename);
-        ++count;
+  do {
+      fil.close();
+      if (count > 0)
+        filename = nextgen(FILE_GENERATE, count);
+      fil.open(folder + filename);
+      ++count;
     } while (fil.is_open());
 
-    fil.close();
-    string f = folder + filename;
+  fil.close();
+  string f = folder + filename;
 
-    generate(f, w, h);
-    return f;
+  generate(f, w, h);
+  return f;
 }
 
 string nextgen(const string& str, int count)
 {
-    string s = str;
-    s.insert(s.rfind('.'), " (" + to_string(count) + ")");
-    return s;
+  string s = str;
+  s.insert(s.rfind('.'), " (" + to_string(count) + ")");
+  return s;
 }

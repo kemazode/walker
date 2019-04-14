@@ -21,6 +21,7 @@
 #include <vector>
 #include <memory>
 
+#include "scenario_constants.hpp"
 #include "images.hpp"
 #include "utils.hpp"
 #include "ui.hpp"
@@ -51,24 +52,22 @@ struct event_item {
 
 using event_items = vector<event_item>;
 
-class event : public base {
-
+class event : public base
+{
     event_conditions   m_conditions;
     size_t             m_conditions_size;
     event_items        m_items;
     event_instructions m_instructions;
     string             m_message;
-    string             m_title;
-    position           m_position;
+    string             m_title     = DEFAULT_EVENT_TITLE;
+    position           m_position  = DEFAULT_EVENT_SIZE;
     text               m_image;
-    image_position     m_image_pos;
-
-    bool m_happened = false;
+    image_position     m_image_pos = DEFAULT_IMAGE_POSITION;
+    bool               m_happened  = false;
 
     event(const string &id) : base(id) {}
 
 public:
-
     /* If the check is successful, then execute actions */
     void test();
     bool happened() { return m_happened; }

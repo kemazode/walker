@@ -17,26 +17,22 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
-#include <string>
-using std::string;
-
 #include "utils.hpp"
 #include "base.hpp"
 
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class object : public base {
+class object : public base
+{
+  int    m_x;
+  int    m_y;
+  int    m_vision_range;
+  cchar  m_symbol;
+  string m_obstacles;
+  string m_unvisible;
 
-    int m_x, m_y;
-    int m_vision_range;
-
-    cchar m_symbol;
-
-    string m_obstacles;
-    string m_unvisible;
 public:
-
     object(const string &id, int x, int y, int v, const cchar &c, const string &i, const string &u)
       : base(id),
         m_x(x),
@@ -54,9 +50,9 @@ public:
     virtual bool move(int x, int y, char path);
     virtual bool visible(char path) const;
 
-    int               x() const { return m_x;  }
-    int               y() const { return m_y;  }
-    int    vision_range() const { return m_vision_range; }
+    int x() const { return m_x; }
+    int y() const { return m_y; }
+    int vision_range() const { return m_vision_range; }
     const cchar& symbol() const { return m_symbol;  }
 };
 

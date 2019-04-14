@@ -50,7 +50,7 @@ class scenario {
   string                             m_file;
   int                                m_lines;
   int                                m_cols;
-  bool                               m_lock = false;
+  bool                               m_lock        = false;
   map                                m_source      = map(DEFAULT_MAP_ID, "", 0, 0);
   map                                m_render      = map(DEFAULT_MAP_ID, "", 0, 0);
   render_f                           m_render_f;
@@ -64,8 +64,10 @@ class scenario {
 
   bool abroad(int x, int y) const
   { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
+
   bool abroadx(int x) const
   { return x >= m_source.width() || x < 0; }
+
   bool abroady(int y) const
   { return y >= m_source.height() || y < 0; }
 
@@ -100,17 +102,14 @@ public:
   void parse_instructions  (const event_instructions &instructions); // m_lock
 };
 
-
 static unique_ptr<scenario> single_scenario;
 
 scenario::scenario(const string &f, render_f r_f, int l, int c) :
   m_lines(l), m_cols(c), m_render_f(r_f)
 {
   load(f);
-
   set_view((*m_player)->x() - m_cols/2,
            (*m_player)->y() - m_lines/2);
-
   m_source.decorate();
   render();
 }
@@ -146,6 +145,7 @@ void scenario::move_player(int x, int y)
 void scenario::set_view(int x, int y)
 {
   if (m_lock) return;
+
   if (!abroadx(x) && !abroadx(x + m_cols - 1))
     m_source.setx(x);
 
@@ -254,7 +254,7 @@ void scenario::render_los(const object &viewer)
                   }
               }
           }
-next_line: ;
+        next_line: ;
       }
 }
 
@@ -263,7 +263,6 @@ void scenario::turn()
   /* At first rendered map of the new state,
      * and then later checked
      * events and pop-up windows */
-
   render();
 
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
@@ -282,7 +281,6 @@ void scenario::render()
       tile.attribute &= ~COLOR_PAIR( PAIR_NUMBER(tile.attribute) );
       tile.attribute |=  COLOR_PAIR( PAIR_NUMBER(obj->symbol().attribute) );
     }
-
   m_render_f(m_render.get_map(), x(), y());
 }
 
@@ -313,10 +311,12 @@ void scenario::parse_call(const string &call, string &id, string &method, string
   auto obracket = call.find('(');
 
   /* function(2, 4, '.') - hasn't object, but point exists */
-  if (pointer > obracket or pointer == string::npos) {
+  if (pointer > obracket or pointer == string::npos)
+    {
       pointer = 0;
       id = "";
-    } else
+    }
+  else
     id = call.substr(0, pointer++);
 
   method = call.substr(pointer, obracket - pointer);
@@ -325,8 +325,8 @@ void scenario::parse_call(const string &call, string &id, string &method, string
     args = "";
   else
     args = call.substr(obracket + 1, cbracket - (obracket + 1));
-
 }
+
 bool scenario::parse_condition(const string& cond) const
 {
   string id;
@@ -335,9 +335,12 @@ bool scenario::parse_condition(const string& cond) const
 
   parse_call(cond, id, method, args);
 
-  if (id.empty()) {
+  if (id.empty())
+    {
 
-    } else {
+    }
+  else
+    {
       if (id == RESERVED_WINDOW_ID)
         {
 
@@ -376,7 +379,6 @@ bool scenario::parse_condition(const string& cond) const
           return false;
         }
     }
-
   return false;
 }
 
@@ -391,8 +393,9 @@ void scenario::parse_command(const string& comm)
   if (id.empty())
     {
 
-    } else {
-
+    }
+  else
+    {
       if (id == RESERVED_WINDOW_ID)
         {
           if (method == "close")
@@ -448,7 +451,7 @@ bool scenario::parse_conditions(const event_conditions &conds, size_t size) cons
         {
           condition = (conds[i].cond.back() == '!')?
                 !parse_condition(conds[i].cond) :
-                 parse_condition(conds[i].cond);
+                parse_condition(conds[i].cond);
         }
       and_sequence *= condition;
     }
@@ -484,13 +487,11 @@ void scenario::parse_yaml() {
   if (!yaml_parser_load(&parser, &document))
     {
       error << "YAML: ";
-
       switch (parser.error)
         {
         case YAML_MEMORY_ERROR:
           error << "Memory error: Not enough memory for parsing.\n";
           break;
-
         case YAML_READER_ERROR:
           if (parser.problem_value != -1) {
               error << "Reader error: "
@@ -504,7 +505,6 @@ void scenario::parse_yaml() {
                     << parser.problem_offset << ".\n";
             }
           break;
-
         case YAML_SCANNER_ERROR:
           error << "Scanner error: ";
           break;
@@ -543,9 +543,7 @@ void scenario::parse_yaml() {
       fclose(file);
 
       throw game_error(error.str());
-
     }
-
   yaml_parser_delete(&parser);
   fclose(file);
 
@@ -571,9 +569,9 @@ void scenario::parse_yaml() {
     yaml_document_delete(&document);
     return;
 
-  } catch (const game_error &er) {
+  } catch (const game_error &error) {
     yaml_document_delete(&document);
-    throw er;
+    throw error;
   }
 }
 
@@ -593,18 +591,19 @@ void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yam
 
       if (!strcmp(section_type, YAML_SECTION_OBJECTS))
         {
-          m_objects.emplace_front ( object::create_from_yaml(key, node_value, doc) );
+          m_objects.emplace_front (object::create_from_yaml(key, node_value, doc));
           if (!strcmp(key, DEFAULT_PLAYER_ID))
-              m_player = prev(m_objects.end());
+            m_player = prev(m_objects.end());
         }
       else if (!strcmp(section_type, YAML_SECTION_MAPS))
-          m_source = map::create_from_yaml(key, node_value, doc);
+        m_source = map::create_from_yaml(key, node_value, doc);
+
       else if (!strcmp(section_type, YAML_SECTION_EVENTS))
-          m_events.emplace_front( event::create_from_yaml(key, node_value, doc) );
+        m_events.emplace_front( event::create_from_yaml(key, node_value, doc) );
       else
         throw game_error( string("Found unknown structure \"") + section_type + "\".");
 
-       add_id(key);
+      add_id(key);
     }
 }
 
@@ -616,7 +615,6 @@ void scenario::add_id(const string &id)
     m_identifiers.emplace_back(id);
 }
 
-/* Interface */
 void scenario_load(const char *f, render_f r_f, int l, int c)
 { single_scenario.reset(new scenario(f, r_f, l, c)); }
 

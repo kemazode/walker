@@ -1,15 +1,15 @@
 /* This file is part of Walker.
- * 
+ *
  * Walker is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- * 
+ *
  * Walker is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU General Public License for more details.
- * 
+ *
  * You should have received a copy of the GNU General Public License
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
@@ -34,57 +34,57 @@ static int hash[] = {208,34,231,213,32,248,233,56,161,78,24,140,71,48,140,254,24
 
 static int noise2(int x, int y)
 {    
-    int tmp = hash[(y + SEED) % 256];
-    return hash[(tmp + x) % 256];
+  int tmp = hash[(y + SEED) % 256];
+  return hash[(tmp + x) % 256];
 }
 
 static float lin_inter(float x, float y, float s)
 {
-    return x + s * (y-x);
+  return x + s * (y-x);
 }
 
 static float smooth_inter(float x, float y, float s)
 {
-    return lin_inter(x, y, s * s * (3-2*s));
+  return lin_inter(x, y, s * s * (3-2*s));
 }
 
 static float noise2d(float x, float y)
 {
-    int x_int = x;
-    int y_int = y;
-    float x_frac = x - x_int;
-    float y_frac = y - y_int;
-    int s = noise2(x_int, y_int);
-    int t = noise2(x_int+1, y_int);
-    int u = noise2(x_int, y_int+1);
-    int v = noise2(x_int+1, y_int+1);
-    float low = smooth_inter(s, t, x_frac);
-    float high = smooth_inter(u, v, x_frac);
-    return smooth_inter(low, high, y_frac);
+  int x_int = int(x);
+  int y_int = int(y);
+  float x_frac = x - x_int;
+  float y_frac = y - y_int;
+  int s = noise2(x_int, y_int);
+  int t = noise2(x_int+1, y_int);
+  int u = noise2(x_int, y_int+1);
+  int v = noise2(x_int+1, y_int+1);
+  float low = smooth_inter(s, t, x_frac);
+  float high = smooth_inter(u, v, x_frac);
+  return smooth_inter(low, high, y_frac);
 }
 
 float perlin2d(float x, float y, float freq, int depth)
 {
-    float xa = x*freq;
-    float ya = y*freq;
-    float amp = 1.0;
-    float fin = 0;
-    float div = 0.0;
+  float xa = x*freq;
+  float ya = y*freq;
+  float amp = 1.0;
+  float fin = 0;
+  float div = 0.0;
 
-    int i;
-    for(i=0; i<depth; i++)
+  int i;
+  for(i=0; i<depth; i++)
     {
-        div += 256 * amp;
-        fin += noise2d(xa, ya) * amp;
-        amp /= 2;
-        xa *= 2;
-        ya *= 2;
+      div += 256 * amp;
+      fin += noise2d(xa, ya) * amp;
+      amp /= 2;
+      xa *= 2;
+      ya *= 2;
     }
 
-    return fin/div;
+  return fin/div;
 }
 
 void perlin_set_seed(int seed)
 {
-    SEED = seed;
+  SEED = seed;
 }

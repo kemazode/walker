@@ -17,34 +17,32 @@
 #ifndef UTILS_HPP
 #define UTILS_HPP
 
-#include <vector>
 #include <string>
 #include <cstring>
+#include <cstdlib>
 #include <ncurses.h>
 #include <stdexcept>
-#include <cstdint>
 
 #define SIZE(x) (sizeof(x)/sizeof(x[0]))
 #define PAIR(A, B) COLOR_PAIR(B*8 + (A + 1))
 
-#define COLOR_BLACK   	0
-#define COLOR_RED	    1
-#define COLOR_GREEN	    2
-#define COLOR_YELLOW	3
-#define COLOR_BLUE	    4
-#define COLOR_MAGENTA	5
-#define COLOR_CYAN	    6
-#define COLOR_WHITE	    7
+#define COLOR_BLACK   0
+#define COLOR_RED     1
+#define COLOR_GREEN   2
+#define COLOR_YELLOW  3
+#define COLOR_BLUE    4
+#define COLOR_MAGENTA 5
+#define COLOR_CYAN    6
+#define COLOR_WHITE   7
 
 #define MYCOLOR COLOR_BLUE
 
-#define F_COUNT 2
-#define F_SCENARIOS ".config/walker/scenarios/"
-#define F_GENERATIONS ".config/walker/generations/"
+#define FILE_COUNT 2
+#define FILE_SCENARIOS ".config/walker/scenarios/"
+#define FILE_GENERATIONS ".config/walker/generations/"
 
 using std::string;
 using std::runtime_error;
-using std::vector;
 
 typedef intptr_t arg_t;
 typedef void (*fun_t)(arg_t);
@@ -72,7 +70,7 @@ struct text
 
   text(const char *str, attr_t attr) {
     lenght = str? strlen(str) : 0;
-    cstr = new cchar[lenght];
+    cstr = reinterpret_cast<cchar *>(calloc(lenght, sizeof(cchar)));
     
     for (size_t i = 0; i < lenght; ++i) {
         cstr[i].symbol    = str[i];
@@ -89,7 +87,7 @@ struct text
   text(const text &t)
   {
     lenght = t.lenght;
-    cstr = new cchar[lenght];
+    cstr = reinterpret_cast<cchar *>(calloc(lenght, sizeof(cchar)));
     for (size_t i = 0; i < lenght; ++i)
       cstr[i] = t.cstr[i];
   }
@@ -99,16 +97,38 @@ struct text
     if (this == &t) return *this;
 
     lenght = t.lenght;
-    delete [] cstr;
+    free(cstr);
 
-    cstr = new cchar[lenght];
+    cstr = reinterpret_cast<cchar *>(calloc(lenght, sizeof(cchar)));
     for (size_t i = 0; i < lenght; ++i)
       cstr[i] = t.cstr[i];
     return *this;
   }
   
-  ~text()
-  { delete [] cstr; }
+  text& operator+(const char *str)
+  {
+    auto pos = lenght;
+    lenght += strlen(str);
+    cstr =  reinterpret_cast<cchar *>(realloc(cstr, lenght * sizeof(cchar)));
+    for (auto i = pos; i < lenght; ++i)
+      {
+        cstr[i].symbol = str[i - pos];
+        cstr[i].attribute = A_NORMAL;
+      }
+    return *this;
+  }
+
+  text& operator+(const text &str)
+  {
+    auto pos = lenght;
+    lenght += str.lenght;
+    cstr = reinterpret_cast<cchar *>(realloc(cstr, lenght * sizeof(cchar)));
+    for (auto i = pos; i < lenght; ++i)
+        cstr[i] = str.cstr[i - pos];
+    return *this;
+  }
+
+  ~text() { free(cstr); }
 
   struct cchar *cstr = nullptr;
   size_t lenght = 0;

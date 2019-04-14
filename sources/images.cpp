@@ -1,3 +1,19 @@
+/* This file is part of Walker.
+ *
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #include "images.hpp"
 #include "utils.hpp"
 #include <fstream>
@@ -8,8 +24,7 @@ static text cow =
     "(oo)\\_______       \n"
     "(__)\\       )\\/\\ \n"
     "    ||----w |       \n"
-    "    ||     ||       \n"
-    "                      ";
+    "    ||     ||       \n";
 
 static text centaur =
     "                     \n"
@@ -22,8 +37,7 @@ static text centaur =
     "   | )____(  |       \n"
     "   /|/     ` /|      \n"
     "   \\ \\      / |    \n"
-    "    |\\|\\   /| |\\  \n"
-    "                       ";
+    "    |\\|\\   /| |\\  \n";
 
 static text horseback_fight =
     "                      \n"
@@ -37,8 +51,8 @@ static text horseback_fight =
     "     \\       /  \\   \n";
 
 static text mountains =
-    "                                                                   \n"
-    "             _,_           +                   __                  \n"
+text("                                                                   \n"
+    "             _,_           ")+text("+", A_BLINK)+"                   __\n"
     "             ','                  /\\          `. `.               \n"
     "       .                        .'  \\    +      \"  |             \n"
     "                               /     \\         /  .'         .    \n"
@@ -119,7 +133,7 @@ text images_find(const char *image)
       throw game_error("HOME variable is not set.");
 
   string path = home;
-  path = path + "/" + F_SCENARIOS + image;
+  path = path + "/" + FILE_SCENARIOS + image;
 
   fstream f(path);
   string im;

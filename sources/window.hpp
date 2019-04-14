@@ -34,6 +34,7 @@
 #define WINDOW_HPP
 
 #include <ncurses.h>
+#include <vector>
 #include <panel.h>
 #include <menu.h>
 
@@ -41,6 +42,8 @@
 #include "utils.hpp"
 
 #define REQ_EXEC_ITEM (MAX_MENU_COMMAND + 1)
+
+using std::vector;
 
 struct window;
 

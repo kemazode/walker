@@ -22,20 +22,21 @@
 
 enum menu
 {
-    MENU_MAIN,
-    MENU_GAME,
-    MENU_OKAY,
-    MENU_MAP_CREATOR,
-    MENU_MAP_SIZES,
+  MENU_MAIN,
+  MENU_GAME,
+  MENU_OKAY,
+  MENU_BACK,
+  MENU_MAP_CREATOR,
+  MENU_MAP_SIZES,
 };
 
 
 enum hooks
 {
-    HOOKS_MAIN,
-    HOOKS_GAME,
-    HOOKS_MENU,
-    HOOKS_EVENT_DIALOG,
+  HOOKS_MAIN,
+  HOOKS_GAME,
+  HOOKS_MENU,
+  HOOKS_EVENT_DIALOG,
 };
 
 enum desc
@@ -43,6 +44,7 @@ enum desc
   DESC_MAIN,
   DESC_MAP_CREATOR,
   DESC_MAP_SIZES,
+  DESC_CONTROL,
 };
 
 enum title
@@ -52,18 +54,19 @@ enum title
   TITLE_MAP_CREATOR,
   TITLE_MAP_SIZES,
   TITLE_ERROR,
+  TITLE_CONTROL
 };
 
 enum build
 {
-    BUILD_MAIN,
-    BUILD_GAME,
-    BUILD_GAME_MENU,
-    BUILD_OKAY,
-    BUILD_MAP_CREATOR,
-    BUILD_MAP_SIZES,
-    BUILD_ERROR,
-    BUILD_END,
+  BUILD_MAIN,
+  BUILD_GAME,
+  BUILD_GAME_MENU,
+  BUILD_OKAY,
+  BUILD_MAP_CREATOR,
+  BUILD_MAP_SIZES,
+  BUILD_ERROR,
+  BUILD_CONTROL,
 };
 
 void init_builder(void);

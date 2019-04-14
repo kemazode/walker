@@ -34,14 +34,15 @@ static item menu_main[] =
 {
   item("Start a new scenario", "You can choose a scenario from the list and start its passage.", {fun_t(scenario_menu), 0}),
   item("Create map", "Here you can generate your own ASCII map.", {window_push, BUILD_MAP_CREATOR}),
-  item("Exit","Just quitting the game.",           {fun_t(window_clear), 0}),
+  item("Controlling", "Keyboard shortcuts.",               {window_push, BUILD_CONTROL}),
+  item("Exit","Just quitting the game.",                          {fun_t(window_clear), 0}),
   {nullptr, {nullptr , 0}}
 };
 
 static item menu_game[] =
 {
-  item("Continue",       {fun_t(window_pop), 0}),
-  item("Exit",           {window_set, BUILD_MAIN}),
+  item("Continue", "Continue the game.", {fun_t(window_pop), 0}),
+  item("Exit", "Back to menu.",          {window_set, BUILD_MAIN}),
   {nullptr, {nullptr , 0}}
 };
 
@@ -51,9 +52,16 @@ static item menu_okay[] =
   {nullptr, {nullptr , 0}}
 };
 
+static item menu_return[] =
+{
+  item("Back", "Back to menu.",  {fun_t(window_pop), 0}),
+  {nullptr, {nullptr , 0}}
+};
+
 static item menu_map_creator[] =
 {
-  item("Generate",      {window_push, BUILD_MAP_SIZES}),
+  item("Generate", "Create a map of ASCII characters.",   {window_push, BUILD_MAP_SIZES}),
+  item("Back",     "Back to menu.",                        {fun_t(window_pop), 0}),
   {nullptr, {nullptr , 0}}
 };
 
@@ -70,6 +78,7 @@ item *menus[] =
   menu_main,
   menu_game,
   menu_okay,
+  menu_return,
   menu_map_creator,
   menu_map_sizes,
 };
@@ -134,7 +143,16 @@ const static text descs[] =
 {
   "You are welcome!",
   "Create your own map.",
-  "Select map size:"
+  "Select map size:",
+
+  text("General", PAIR(MYCOLOR, COLOR_BLACK)) + ":\n\
+  Q/q      - Close the window (not the main menu).\n\
+  Enter    - Choosing.\n\
+  Up, Down - Menu navigation.\n\n" +
+  text("Game", PAIR(MYCOLOR, COLOR_BLACK)) + ":\n\
+  i/I, j/J, k/K, l/L    - Map view moving.\n\
+  Up, Down, Right, Left - Player moving.\n\
+  Q/q                   - Open game menu.",
 };
 
 const static text titles[] =
@@ -144,11 +162,12 @@ const static text titles[] =
   "Map Creator",
   "Map Sizes",
   "Error",
+  "Controlling",
 };
 
 builder build[] =
 {
-  builder
+  builder /* BUILD_MAIN */
   (
   POSITION_FULL,
   menus[MENU_MAIN],
@@ -160,7 +179,7 @@ builder build[] =
   images[IMAGE_HORSEBACK_FIGHT]
   ),
 
-  builder
+  builder /* BUILD_GAME */
   (
   POSITION_FULL,
   nullptr,
@@ -170,7 +189,7 @@ builder build[] =
   OPTION_BORDERLESS
   ),
 
-  builder
+  builder /* BUILD_GAME_MENU */
   (
   POSITION_SMALL,
   menus[MENU_GAME],
@@ -179,7 +198,7 @@ builder build[] =
   titles[TITLE_MENU]
   ),
 
-  builder
+  builder /* BUILD_OKAY */
   (
   POSITION_SMALL,
   menus[MENU_OKAY],
@@ -188,7 +207,7 @@ builder build[] =
   titles[TITLE_MESSAGE]
   ),
 
-  builder
+  builder /* BUILD_MAP_CREATOR */
   (
   POSITION_FULL,
   menus[MENU_MAP_CREATOR],
@@ -200,7 +219,7 @@ builder build[] =
   images[IMAGE_MOUNTAINS]
   ),
 
-  builder
+  builder /* BUILD_MAP_SIZES */
   (
   POSITION_SMALL,
   menus[MENU_MAP_SIZES],
@@ -209,7 +228,7 @@ builder build[] =
   titles[TITLE_MAP_SIZES]
   ),
 
-  builder
+  builder /* BUILD_ERROR */
   (
   POSITION_SMALL,
   menus[MENU_OKAY],
@@ -217,45 +236,52 @@ builder build[] =
   nullptr,
   titles[TITLE_ERROR]
   ),
+
+  builder /* BUILD_CONTROL */
+  (
+  POSITION_FULL,
+  menus[MENU_BACK],
+  hooks[HOOKS_MENU],
+  descs[DESC_CONTROL],
+  titles[TITLE_CONTROL],
+  OPTION_NORMAL,
+  FORMAT_RIGHT
+  ),
 };
 
 
 void scenario_init(arg_t arg)
 {
-    char* scene = reinterpret_cast<char *>(arg);
+  char* scene = reinterpret_cast<char *>(arg);
+  auto location = window_get_location(build[BUILD_GAME].position);
 
-    auto location = window_get_location(build[BUILD_GAME].position);
+  try {
+    scenario_load(scene, window_print, location.lines, location.cols);
 
-    try {
-        scenario_load(scene, window_print, location.lines, location.cols);
-
-    } catch(const game_error &error)  {
-        window_push(BUILD_ERROR, error.what());
-        return;
-    }
-
-    window_set(BUILD_GAME);
-    scenario_unlock();
+  } catch(const game_error &error)  {
+    window_push(BUILD_ERROR, error.what());
+    return;
+  }
+  window_set(BUILD_GAME);
+  scenario_unlock();
 }
 
 void map_generate(arg_t arg)
 {
-    string fil;
+  string fil;
 
-    /* Remove C_SIZES */
-    window_pop();
+  /* Remove C_SIZES */
+  window_pop();
+  try {
+    /* Square-shaped map */
+    fil = map::generate(int(arg), int(arg));
 
-    try {
+  } catch (const game_error& error) {
+    window_push(BUILD_ERROR, error.what());
+    return;
+  }
 
-        /* Square-shaped map */
-        fil = map::generate(int(arg), int(arg));
-
-    } catch (const game_error& error) {
-      window_push(BUILD_ERROR, error.what());
-      return;
-    }
-
-    window_push(BUILD_OKAY, "Map was successfully generated to " + fil);
+  window_push(BUILD_OKAY, "Map was successfully generated to " + fil);
 }
 
 void scenario_menu()
@@ -263,13 +289,14 @@ void scenario_menu()
   constexpr size_t extension_size = sizeof(".yaml");
   const char * home = std::getenv("HOME");
 
-  if (home == nullptr) {
+  if (home == nullptr)
+    {
       window_push(BUILD_ERROR, "HOME variable is not set.");
       return;
     }
 
   string dir = home;
-  dir = dir + '/' + F_SCENARIOS;
+  dir = dir + '/' + FILE_SCENARIOS;
 
   vector<unique_ptr<char[]>> paths;
   vector<unique_ptr<char[]>> names;
@@ -277,13 +304,14 @@ void scenario_menu()
   DIR *dp;
   struct dirent *dirp;
 
-  if((dp  = opendir(dir.c_str())) == nullptr) {
+  if((dp  = opendir(dir.c_str())) == nullptr)
+    {
       window_push(BUILD_ERROR, string(strerror(errno)) + " \"" + dir + "\".");
       return;
     }
   while  ( (dirp = readdir(dp)) != nullptr )
-    if (dirp->d_type & DT_REG) {
-
+    if (dirp->d_type & DT_REG)
+      {
         string path = dir + dirp->d_name;
         if (path.rfind(".yaml") != path.size() + 1 - extension_size)
           continue;
@@ -300,13 +328,13 @@ void scenario_menu()
 
   closedir(dp);
 
-  if (paths.empty()) {
+  if (paths.empty())
+    {
       window_push(BUILD_ERROR, "No scenarios in \"" + dir + "\".");
       return;
     }
 
   unique_ptr<item[]> load_menu(new item[paths.size() + 1]);
-
 
   for (size_t i = 0; i < paths.size(); ++i)
     load_menu.get()[i] =

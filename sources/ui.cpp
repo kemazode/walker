@@ -234,7 +234,7 @@ void scenario_init(arg_t arg)
         return;
     }
 
-    window_push(BUILD_GAME);
+    window_set(BUILD_GAME);
     scenario_unlock();
 }
 
@@ -260,65 +260,72 @@ void map_generate(arg_t arg)
 
 void scenario_menu()
 {
-    const char * home = std::getenv("HOME");
+  constexpr size_t extension_size = sizeof(".yaml");
+  const char * home = std::getenv("HOME");
 
-    if (home == nullptr) {
-        window_push(BUILD_ERROR, "HOME variable is not set.");
-        return;
+  if (home == nullptr) {
+      window_push(BUILD_ERROR, "HOME variable is not set.");
+      return;
     }
 
-    string dir = home;
-    dir = dir + '/' + F_SCENARIOS;
+  string dir = home;
+  dir = dir + '/' + F_SCENARIOS;
 
-    vector<unique_ptr<char[]>> paths;
-    vector<unique_ptr<char[]>> names;
+  vector<unique_ptr<char[]>> paths;
+  vector<unique_ptr<char[]>> names;
 
-    DIR *dp;
-    struct dirent *dirp;
+  DIR *dp;
+  struct dirent *dirp;
 
-    if((dp  = opendir(dir.c_str())) == nullptr) {
-        window_push(BUILD_ERROR, string(strerror(errno)) + " \"" + dir + "\".");
-        return;
+  if((dp  = opendir(dir.c_str())) == nullptr) {
+      window_push(BUILD_ERROR, string(strerror(errno)) + " \"" + dir + "\".");
+      return;
     }
-    while  ( (dirp = readdir(dp)) != nullptr )
-        if (dirp->d_type & DT_REG) {
-            //files.emplace_back(dir + dirp->d_name);
-            string path = dir + dirp->d_name;
-            paths.emplace_back (new char[path.size() + 1]);
-            strcpy(paths.back().get(), path.c_str());
+  while  ( (dirp = readdir(dp)) != nullptr )
+    if (dirp->d_type & DT_REG) {
 
-            names.emplace_back (new char[strlen(dirp->d_name) + 1]);
-            strcpy(names.back().get(), dirp->d_name);
-          }
+        string path = dir + dirp->d_name;
+        if (path.rfind(".yaml") != path.size() + 1 - extension_size)
+          continue;
 
-    closedir(dp);
+        paths.emplace_back(new char[path.size() + 1]);
+        strcpy(paths.back().get(), path.c_str());
 
-    if (paths.empty()) {
-        window_push(BUILD_ERROR, "No files in \"" + dir + "\".");
-        return;
+        auto name_lenght = strlen(dirp->d_name) - extension_size + 1;
+
+        names.emplace_back (new char[name_lenght + 1]);
+        strncpy(names.back().get(), dirp->d_name, name_lenght);
+        names.back().get()[name_lenght] = '\0';
       }
 
-    unique_ptr<item[]> load_menu(new item[paths.size() + 1]);
+  closedir(dp);
+
+  if (paths.empty()) {
+      window_push(BUILD_ERROR, "No scenarios in \"" + dir + "\".");
+      return;
+    }
+
+  unique_ptr<item[]> load_menu(new item[paths.size() + 1]);
 
 
-    for (size_t i = 0; i < paths.size(); ++i)
-        load_menu.get()[i] =
-        {
-          names[i].get(),
-          { fun_t(scenario_init), arg_t(paths[i].get()) }
-        };
-    load_menu.get()[paths.size()] = {};
+  for (size_t i = 0; i < paths.size(); ++i)
+    load_menu.get()[i] =
+    {
+      names[i].get(),
+      { fun_t(scenario_init), arg_t(paths[i].get()) }
+    };
+  load_menu.get()[paths.size()] = {};
 
-    window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
-                                       "Select the scenario:",
-                                       "Scenarios",
-                                       OPTION_NORMAL,
-                                       FORMAT_CENTER,
-                                       images[IMAGE_OPEN_BOOK],
-                                       IMAGE_POSITION_LEFT));
+  window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
+                                     "Select the scenario:",
+                                     "Scenarios",
+                                     OPTION_NORMAL,
+                                     FORMAT_CENTER,
+                                     images[IMAGE_OPEN_BOOK],
+                                     IMAGE_POSITION_LEFT));
 
-    /* Exit when a choice window a scenario will close
+  /* Exit when a choice window a scenario will close
      * and may be free of memory */
-    while(window_has(wptr))
-        window_hook();
+  while(window_has(wptr))
+    window_hook();
 }

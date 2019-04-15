@@ -123,20 +123,22 @@ static hook hooks_menu[] =
   hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
   {0, {nullptr, 0}}
 };
-static hook hooks_event_dialog[] =
-{
-  hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
-  hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
-  hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
-  {0, {nullptr, 0}}
-};
+
+//static hook hooks_event_dialog[] =
+//{
+//  hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}),
+//  hook('\n',     {fun_t(window_pop), 0}),
+//  hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
+//  hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
+//  {0, {nullptr, 0}}
+//};
 
 hook *hooks[] =
 {
   hooks_main,
   hooks_game,
   hooks_menu,
-  hooks_event_dialog,
+  //hooks_event_dialog,
 };
 
 const static text descs[] =
@@ -145,11 +147,11 @@ const static text descs[] =
   "Create your own map.",
   "Select map size:",
 
-  text("General", PAIR(MYCOLOR, COLOR_BLACK)) + ":\n\
+  text("General", PAIR(NEUTRAL_COLOR, COLOR_BLACK)) + ":\n\
   Q/q      - Close the window (not the main menu).\n\
   Enter    - Choosing.\n\
   Up, Down - Menu navigation.\n\n" +
-  text("Game", PAIR(MYCOLOR, COLOR_BLACK)) + ":\n\
+  text("Game", PAIR(NEUTRAL_COLOR, COLOR_BLACK)) + ":\n\
   i/I, j/J, k/K, l/L    - Map view moving.\n\
   Up, Down, Right, Left - Player moving.\n\
   Q/q                   - Open game menu.",

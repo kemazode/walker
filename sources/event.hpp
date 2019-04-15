@@ -58,19 +58,26 @@ class event : public base
     size_t             m_conditions_size;
     event_items        m_items;
     event_instructions m_instructions;
+    unique_ptr<item[]> m_event_menu = nullptr;
+    unique_ptr<hook[]> m_event_hooks;
     string             m_message;
-    string             m_title     = DEFAULT_EVENT_TITLE;
+    attr_t             m_attribute = DEFAULT_EVENT_ATTRIBUTE;
+    string             m_title;
     position           m_position  = DEFAULT_EVENT_SIZE;
     text               m_image;
     image_position     m_image_pos = DEFAULT_IMAGE_POSITION;
     bool               m_happened  = false;
+    int                m_count     = 0;
 
     event(const string &id) : base(id) {}
 
 public:
     /* If the check is successful, then execute actions */
-    void test();
-    bool happened() { return m_happened; }
+    void run();
+    void inc() { ++m_count; }
+    bool test();
+    bool happened(int count = -1)
+    { return count == -1? m_happened : m_happened * (m_count == count); }
 
     static event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
     static void selected(arg_t instructions_ptr);

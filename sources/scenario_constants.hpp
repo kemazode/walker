@@ -17,8 +17,10 @@ constexpr const char *YAML_EVENT_CONDITIONS     = "if";
 constexpr const char *YAML_EVENT_MESSAGE        = "message";
 constexpr const char *YAML_EVENT_TITLE          = "title";
 constexpr const char *YAML_EVENT_SIZE           = "size";
+constexpr const char *YAML_EVENT_ATTRIBUTE      = "color";
 constexpr const char *YAML_EVENT_IMAGE          = "image";
-constexpr const char *YAML_EVENT_IMAGE_POSITION = "image position";
+constexpr const char *YAML_EVENT_IMAGE_FILE     = "file";
+constexpr const char *YAML_EVENT_IMAGE_POSITION = "position";
 constexpr const char *YAML_EVENT_ITEMS          = "items";
 constexpr const char *YAML_EVENT_COMMANDS       = "do";
 constexpr const char *YAML_EVENT_ITEM_LABEL     = "label";
@@ -29,14 +31,13 @@ constexpr const char *YAML_MAP_HEIGHT = "height";
 constexpr const char *YAML_MAP_TEXT   = "text";
 
 constexpr const char    *DEFAULT_PARSE_ERROR       = "YAML configuration does not match the scenario specification.";
-constexpr const char    *DEFAULT_EVENT_TITLE       = "Event";
 constexpr position       DEFAULT_EVENT_SIZE        = POSITION_SMALL;
+constexpr attr_t         DEFAULT_EVENT_ATTRIBUTE   = PAIR(NEUTRAL_COLOR, COLOR_BLACK);
 constexpr const char    *DEFAULT_PLAYER_ID         = "player";
 constexpr const char    *DEFAULT_MAP_ID            = "map";
 constexpr int            DEFAULT_TILE_ATTRIBUTE    = A_INVIS;
-constexpr image_position DEFAULT_IMAGE_POSITION = IMAGE_POSITION_TOP;
+constexpr image_position DEFAULT_IMAGE_POSITION    = IMAGE_POSITION_TOP;
 
-constexpr const char *RESERVED_WINDOW_ID   = "window";
 constexpr const char *RESERVED_SCENARIO_ID = "scenario";
 
 constexpr const char *YAML_IMAGE_POSITION_TOP  = "Top";
@@ -46,6 +47,9 @@ constexpr const char *YAML_IMAGE_MOUNTAINS = "Mountains";
 constexpr const char *YAML_IMAGE_COW       = "Cow";
 constexpr const char *YAML_IMAGE_CENTAUR   = "Centaur";
 constexpr const char *YAML_IMAGE_PIKEMAN   = "Pikeman";
+
+constexpr const char *YAML_WINDOW_ATTRIBUTE_HOSTILE  = "Hostile";
+constexpr const char *YAML_WINDOW_ATTRIBUTE_NEUTRAL  = "Neutral";
 
 constexpr const char *YAML_WINDOW_SIZE_SMALL   = "Small";
 constexpr const char *YAML_WINDOW_SIZE_AVERAGE = "Average";

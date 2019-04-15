@@ -57,7 +57,7 @@ class scenario {
   list<unique_ptr<event>>            m_events;
   list<unique_ptr<object>>           m_objects;
   list<unique_ptr<object>>::iterator m_player      = m_objects.end();
-  vector<string>                     m_identifiers = {RESERVED_WINDOW_ID, RESERVED_SCENARIO_ID};
+  vector<string>                     m_identifiers = {RESERVED_SCENARIO_ID};
 
   list<unique_ptr<object>>::const_iterator find_object(const string& id) const;
   list<unique_ptr<event>>::const_iterator  find_event(const string& id) const;
@@ -266,7 +266,13 @@ void scenario::turn()
   render();
 
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
-    (*iter)->test();
+    {
+      (*iter)->test();
+
+      /* Increase turns after exec */
+      if ((*iter)->happened())
+        (*iter)->inc();
+    }
 }
 
 void scenario::render()
@@ -337,16 +343,14 @@ bool scenario::parse_condition(const string& cond) const
 
   if (id.empty())
     {
+      if (method == "false")
+          return false;
 
+      else if (method == "true")
+        return true;
     }
   else
     {
-      if (id == RESERVED_WINDOW_ID)
-        {
-
-          return false;
-        }
-
       if (id == RESERVED_SCENARIO_ID)
         {
 
@@ -373,8 +377,12 @@ bool scenario::parse_condition(const string& cond) const
       auto event = find_event(id);
       if (event != m_events.end())
         {
-          if (method == "happened")
-            return event->get()->happened();
+          if (method == "happened") {
+              if (args.empty())
+                return event->get()->happened();
+              else
+                return event->get()->happened(stoi(args));
+            }
 
           return false;
         }
@@ -396,14 +404,6 @@ void scenario::parse_command(const string& comm)
     }
   else
     {
-      if (id == RESERVED_WINDOW_ID)
-        {
-          if (method == "close")
-            window_pop();
-
-          return;
-        }
-
       if (id == RESERVED_SCENARIO_ID)
         {
           if (method == "exit")
@@ -422,7 +422,11 @@ void scenario::parse_command(const string& comm)
       auto event = find_event(id);
       if (event != m_events.end())
         {
-
+          if (method == "run")
+            {
+              event->get()->run();
+            }
+          return;
         }
     }
 }

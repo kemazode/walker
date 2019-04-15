@@ -35,7 +35,8 @@
 #define COLOR_CYAN    6
 #define COLOR_WHITE   7
 
-#define MYCOLOR COLOR_BLUE
+#define NEUTRAL_COLOR COLOR_BLUE
+#define HOSTILE_COLOR COLOR_RED
 
 #define FILE_COUNT 2
 #define FILE_SCENARIOS ".config/walker/scenarios/"

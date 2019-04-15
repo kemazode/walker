@@ -126,10 +126,8 @@ window *window_push(const struct builder &builder)
               }
           ++image_width;
 
-          loc_w.cols  /= 2;
-
           /*  Recompute the standard width of the subwindow */
-          sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
+          sub_window_width = loc_w.cols/2 - 2*TEXT_BORDER_INDENT_X;
 
           /*
           +-----------------+-----------------+
@@ -146,7 +144,7 @@ window *window_push(const struct builder &builder)
           +-----------------+-----------------+
           */
 
-          int image_x = loc_w.cols + (loc_w.cols - image_width)/2 - COLS_BORDERS_WIDTH;
+          int image_x = sub_window_width + (sub_window_width - image_width)/2;
           int image_y = (loc_w.lines - text_h)/2 + LINES_BORDERS_WIDTH;
 
           /* Set to center */
@@ -225,7 +223,7 @@ window *window_push(const struct builder &builder)
       /* Set menu decorations */
       set_menu_mark(new_w->menu, ITEM_SELECT);
       set_menu_grey(new_w->menu, A_DIM);
-      set_menu_fore(new_w->menu, PAIR(MYCOLOR, COLOR_BLACK)|A_BOLD);
+      set_menu_fore(new_w->menu, builder.attribute|A_BOLD);
       set_menu_back(new_w->menu, PAIR(COLOR_WHITE, COLOR_BLACK));
 
       /* Attaching */
@@ -244,7 +242,7 @@ window *window_push(const struct builder &builder)
     }
 
   /* Set window decorations */
-  wattron(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
+  wattron(new_w->window, builder.attribute);
 
   if ( !(builder.options & OPTION_BORDERLESS))
        box(new_w->window, 0, 0);
@@ -260,7 +258,7 @@ window *window_push(const struct builder &builder)
       wattroff(new_w->window, A_REVERSE);
     }
 
-  wattroff(new_w->window, PAIR(MYCOLOR, COLOR_BLACK));
+  wattroff(new_w->window, builder.attribute);
 
   /* Set hooks */
   new_w->hooks   = builder.hooks;
@@ -342,7 +340,7 @@ void window_menu_driver(int req)
 
   auto item = reinterpret_cast<struct item *>(item_userptr(current_item(top_window->menu)));
   wclear(top_window->sub_window_desc);
-  if (item->description)
+  if (item && item->description)
     mvwaddstr(top_window->sub_window_desc, 0, 0, item->description);
 
   window_refresh();
@@ -359,10 +357,8 @@ void window_hook()
   /* "cur == top_window &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон,
      * или создаст новое, при этом указатель может повиснет на освобожденной структуре*/
   for (int i = 0; cur == top_window && i < cur->hooks_c; ++i)
-    if (cur->hooks[i].key == key) {
+    if (cur->hooks[i].key == key)
         cur->hooks[i].action();
-        return;
-      }
 }
 
 void window_print(const vector<text> &vec, int x, int y)

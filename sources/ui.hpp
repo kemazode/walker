@@ -36,7 +36,7 @@ enum hooks
   HOOKS_MAIN,
   HOOKS_GAME,
   HOOKS_MENU,
-  HOOKS_EVENT_DIALOG,
+  //HOOKS_EVENT_DIALOG,
 };
 
 enum desc

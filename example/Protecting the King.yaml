@@ -75,8 +75,8 @@ objects:
 # Поле "message" устанавливает сообщение, выводящееся, при выполнении события. Если
 # это поле оставить пустым, то сообщение не выведется, при этом выполнятся действия из поля "do". (!)
 
-# Поле "color" устанавливает цвет окна события, по умолчание "Neutral".
-# Варианты: "Hostile", "Neutral"
+# Поле "color" устанавливает статус (цвет) окна события, по умолчание "Neutral".
+# Варианты: "Hostile", "Neutral", "Friend"
 
 # Методы определенные для каждого события:
 # -----/ bool happened() - возвращает true, если событие уже произошло;
@@ -92,6 +92,7 @@ events:
     image: 
       file: "Pikeman"
       position: "Left"
+    color: "Friend"
     items:                                     
        -                                    
          label: "For the King!"         
@@ -100,9 +101,9 @@ events:
          do:    [ scenario.exit() ]  
          
   ev2:
-    if: [ ev1.happened(10) ]
-    title:   ""
-    size:    "Small"
+    if: [ ev1.happened(10) ]    
+    size:  "Small"
+    color: "Neutral"
     message: "Suddenly you heard someone behind you..."
     do: [ ambush.run() ]
     

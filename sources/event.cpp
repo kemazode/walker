@@ -289,8 +289,11 @@ static void parse_attribute_from_yaml (const yaml_node_t *node, attr_t &attr)
   if (!strcmp(value, YAML_WINDOW_ATTRIBUTE_HOSTILE))
     attr = PAIR(HOSTILE_COLOR, COLOR_BLACK);
 
-  else if (!strcmp(value, YAML_IMAGE_POSITION_LEFT))
+  else if (!strcmp(value, YAML_WINDOW_ATTRIBUTE_NEUTRAL))
     attr = PAIR(NEUTRAL_COLOR, COLOR_BLACK);
+
+  else if (!strcmp(value, YAML_WINDOW_ATTRIBUTE_FRIEND))
+    attr = PAIR(FRIEND_COLOR, COLOR_BLACK);
   else
     throw game_error(string("Invalid color value \"") + value + "\" in the color structure.");
 }

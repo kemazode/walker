@@ -50,6 +50,7 @@ constexpr const char *YAML_IMAGE_PIKEMAN   = "Pikeman";
 
 constexpr const char *YAML_WINDOW_ATTRIBUTE_HOSTILE  = "Hostile";
 constexpr const char *YAML_WINDOW_ATTRIBUTE_NEUTRAL  = "Neutral";
+constexpr const char *YAML_WINDOW_ATTRIBUTE_FRIEND   = "Friend";
 
 constexpr const char *YAML_WINDOW_SIZE_SMALL   = "Small";
 constexpr const char *YAML_WINDOW_SIZE_AVERAGE = "Average";

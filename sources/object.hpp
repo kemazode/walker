@@ -45,15 +45,21 @@ public:
     static object* create_from_type(const string &id, const string& type, int x, int y);
     static object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
-    virtual ~object() {}
+    bool move(int x, int y, char path)
+    { return movable(path)? (void(m_x += x), void(m_y += y), true) : false; }
 
-    virtual bool move(int x, int y, char path);
-    virtual bool visible(char path) const;
+    bool movable(char path) const
+    { return m_obstacles.find(path) == string::npos; }
+
+    bool visible(char path) const
+    { return m_unvisible.find(path) == string::npos; }
 
     int x() const { return m_x; }
     int y() const { return m_y; }
     int vision_range() const { return m_vision_range; }
     const cchar& symbol() const { return m_symbol;  }
+
+    virtual ~object() = default;
 };
 
 class dwarf : public object {

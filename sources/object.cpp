@@ -63,22 +63,6 @@ object* object::create_from_yaml(const string &id, const yaml_node_t *node, yaml
   return create_from_type(id, type, x, y);
 }
 
-bool object::move(int x, int y, char path)
-{
-  if (m_obstacles.find(path) == string::npos)
-    {
-      m_x += x;
-      m_y += y;
-      return true;
-    }
-  return false;
-}
-
-bool object::visible(char path) const
-{
-  return m_unvisible.find(path) == string::npos;
-}
-
 dwarf::dwarf(const string &id, int x, int y)
   : object(id, x, y,
            DWARF_VISION_RANGE,

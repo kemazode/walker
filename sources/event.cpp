@@ -35,9 +35,9 @@ event* event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
   auto event = new class event(id);
 
   if (!node)
-    throw game_error("Empty map structure.");
+    throw game_error("Empty event structure.");
   else if (node->type != YAML_MAPPING_NODE)
-    throw game_error("Invalid map stucture.");
+    throw game_error("Invalid event stucture.");
 
   for (auto b = node->data.mapping.pairs.start; b < node->data.mapping.pairs.top; ++b)
     {
@@ -45,7 +45,7 @@ event* event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
       auto node_value = yaml_document_get_node(doc, b->value);
 
       if (node_key->type != YAML_SCALAR_NODE)
-        throw game_error("Invalid map structure.");
+        throw game_error("Invalid event structure.");
 
       const char *key = reinterpret_cast<const char *>(node_key->data.scalar.value);
 
@@ -73,7 +73,7 @@ event* event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
       else if (!strcmp(YAML_EVENT_ATTRIBUTE, key))
         parse_attribute_from_yaml(node_value, event->m_attribute);
       else
-        throw game_error( string("Invalid field in event structure: \"") + key + "\"");
+        throw game_error( string("Invalid field in the event structure: \"") + key + "\"");
     }
 
   constexpr int HOOKS_SIZE = 5;

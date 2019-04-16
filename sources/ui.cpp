@@ -154,7 +154,8 @@ const static text descs[] =
   text("Game", PAIR(NEUTRAL_COLOR, COLOR_BLACK)) + ":\n\
   i/I, j/J, k/K, l/L    - Map view moving.\n\
   Up, Down, Right, Left - Player moving.\n\
-  Q/q                   - Open game menu.",
+  Q/q                   - Open game menu.\n\
+  Enter                 - Close the message window.",
 };
 
 const static text titles[] =

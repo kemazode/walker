@@ -261,12 +261,13 @@ void scenario_init(arg_t arg)
   try {
     scenario_load(scene, window_print, location.lines, location.cols);
 
-  } catch(const game_error &error)  {
-    window_push(BUILD_ERROR, error.what());
+  } catch(const game_error &error)  {  
+    window_push(BUILD_ERROR, error.what());    
     return;
   }
+
   window_set(BUILD_GAME);
-  scenario_unlock();
+  scenario_render();
 }
 
 void map_generate(arg_t arg)

@@ -32,7 +32,8 @@ class object : public base
   string m_obstacles;
   string m_unvisible;
 
-public:
+protected:
+
     object(const string &id, int x, int y, int v, const cchar &c, const string &i, const string &u)
       : base(id),
         m_x(x),
@@ -42,8 +43,13 @@ public:
         m_obstacles(i),
         m_unvisible(u) {}
 
-    static object* create_from_type(const string &id, const string& type, int x, int y);
-    static object* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+public:
+
+    object(const object &)            = delete;
+    object& operator=(const object &) = delete;
+
+    static object& create_from_type(const string &id, const string& type, int x, int y);
+    static object& create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
     bool move(int x, int y, char path)
     { return movable(path)? (void(m_x += x), void(m_y += y), true) : false; }
@@ -54,10 +60,10 @@ public:
     bool visible(char path) const
     { return m_unvisible.find(path) == string::npos; }
 
-    int x() const { return m_x; }
-    int y() const { return m_y; }
-    int vision_range() const { return m_vision_range; }
-    const cchar& symbol() const { return m_symbol;  }
+    int          x()            const { return m_x; }
+    int          y()            const { return m_y; }
+    int          vision_range() const { return m_vision_range; }
+    const cchar& symbol()       const { return m_symbol;  }
 
     virtual ~object() = default;
 };

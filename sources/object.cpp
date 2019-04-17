@@ -19,15 +19,15 @@
 #include "scenario_constants.hpp"
 #include "object.hpp"
 
-object* object::create_from_type(const string &id, const string& type, int x, int y)
+object& object::create_from_type(const string &id, const string& type, int x, int y)
 {
   if (type == DWARF_TYPE)
-    return new dwarf(id, x, y);
+    return *new dwarf(id, x, y);
   else
     throw game_error("Unknown object type \"" + type + "\".");
 }
 
-object* object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+object& object::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
   string type;
   int x = 0;

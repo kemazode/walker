@@ -21,16 +21,16 @@
 
 using std::unique_ptr;
 
-static void parse_instructions_from_yaml   (const yaml_node_t *node, yaml_document_t *doc, event_instructions &cmds);
-static void parse_conditions_from_yaml     (const yaml_node_t *node, yaml_document_t *doc, event_conditions &conds, size_t &size);
-static void parse_items_from_yaml          (const yaml_node_t *node, yaml_document_t *doc, event_items &items);
-static void parse_string_from_yaml         (const yaml_node_t *node, string &msg);
-static void parse_position_from_yaml       (const yaml_node_t *node, position &p);
-static void parse_image_from_yaml          (const yaml_node_t *node, yaml_document_t *doc, text &im, image_position &im_pos);
-static void parse_attribute_from_yaml      (const yaml_node_t *node, attr_t &attr);
+static void parse_instructions_from_yaml (const yaml_node_t *node, yaml_document_t *doc, event_instructions &cmds);
+static void parse_conditions_from_yaml   (const yaml_node_t *node, yaml_document_t *doc, event_conditions &conds, size_t &size);
+static void parse_items_from_yaml        (const yaml_node_t *node, yaml_document_t *doc, event_items &items);
+static void parse_string_from_yaml       (const yaml_node_t *node, string &msg);
+static void parse_position_from_yaml     (const yaml_node_t *node, position &p);
+static void parse_image_from_yaml        (const yaml_node_t *node, yaml_document_t *doc, text &im, image_position &im_pos);
+static void parse_attribute_from_yaml    (const yaml_node_t *node, attr_t &attr);
 
 /* Dynamic alloc */
-event* event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+event& event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
   auto event = new class event(id);
 
@@ -105,7 +105,7 @@ event* event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
       event->m_event_hooks.get()[HOOK_MENU].action.arg = arg_t(&event->m_instructions);
     }
 
-  return event;
+  return *event;
 }
 
 void event::run()

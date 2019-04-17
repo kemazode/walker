@@ -77,9 +77,11 @@ map::map(const string &id, const string &map, int w, int h) : base(id)
       string &&temp = map.substr(pos, newline - pos);
       this->push(temp);
     }
+
+  this->decorate();
 }
 
-map map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+map& map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
   string text;
   int w = 0;
@@ -113,7 +115,7 @@ map map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_docume
         throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
-  return map(id, text, w, h);
+  return *new map(id, text, w, h);
 }
 
 void map::decorate()

@@ -72,6 +72,11 @@ class event : public base
     event(const string &id) : base(id) {}
 
 public:
+
+    event(event &&) = default;
+    event(const event &) = delete;
+    event& operator=(const event &) = delete;
+
     /* If the check is successful, then execute actions */
     void run();
     void inc() { ++m_count; }
@@ -79,7 +84,7 @@ public:
     bool happened(int count = -1)
     { return count == -1? m_happened : m_happened * (m_count == count); }
 
-    static event* create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+    static event& create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
     static void selected(arg_t instructions_ptr);
 };
 

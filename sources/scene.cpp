@@ -45,61 +45,60 @@ using std::unique_ptr;
 using std::list;
 using std::string;
 
+void parse_call(const string &call, string &id, string &method, string &args);
+
 class scenario {
 
   string                             m_file;
   int                                m_lines;
   int                                m_cols;
-  bool                               m_lock        = false;
-  map                                m_source      = map(DEFAULT_MAP_ID, "", 0, 0);
-  map                                m_render      = map(DEFAULT_MAP_ID, "", 0, 0);
+  unique_ptr<map>                    m_source      = nullptr;
+  unique_ptr<map>                    m_render      = nullptr;
   render_f                           m_render_f;
-  list<unique_ptr<event>>            m_events;
+  vector<unique_ptr<event>>          m_events;
   list<unique_ptr<object>>           m_objects;
   list<unique_ptr<object>>::iterator m_player      = m_objects.end();
   vector<string>                     m_identifiers = {RESERVED_SCENARIO_ID};
 
   list<unique_ptr<object>>::const_iterator find_object(const string& id) const;
-  list<unique_ptr<event>>::const_iterator  find_event(const string& id) const;
+  vector<unique_ptr<event>>::const_iterator  find_event(const string& id) const;
 
   bool abroad(int x, int y) const
-  { return x >= m_source.width() || y >= m_source.height() || x < 0 || y < 0; }
+  { return x >= m_source->width() || y >= m_source->height() || x < 0 || y < 0; }
 
   bool abroadx(int x) const
-  { return x >= m_source.width() || x < 0; }
+  { return x >= m_source->width() || x < 0; }
 
   bool abroady(int y) const
-  { return y >= m_source.height() || y < 0; }
+  { return y >= m_source->height() || y < 0; }
 
   void add_id(const string &id);
   void render_los(const object& viewer);
   void render_set_visible(int x, int y);
   void source_set_detected(int x, int y);
   void turn();
-  void render();
-  void parse_call(const string &call, string &id, string &method, string &args) const;
-  bool parse_condition(const string& cond) const;
+  void load(const string &f);
   void parse_yaml();
   void parse_yaml(const char *section_type, const yaml_node_t *node, yaml_document_t *doc);
-  void parse_command  (const string& comm);
-  int height() const { return m_source.height(); }
-  int width() const { return m_source.width(); }
-  int x() const { return m_source.x(); }
-  int y() const { return m_source.y(); }
-  void load(const string &f);
+  void parse_command(const string& comm);
+  bool parse_condition(const string& cond) const;
+
+  int height() const { return m_source->height(); }
+  int width()  const { return m_source->width(); }
+  int x()      const { return m_source->x(); }
+  int y()      const { return m_source->y(); }
+
 public:
 
   scenario(const string &f, render_f r_f, int l, int c);
 
-  void unlock() { m_lock = false; render(); }
-  void lock()   { m_lock = true; }
-
-  void set_view   (int x, int y); // m_lock
-  void move_player(int x, int y); // m_lock
-  void move_view  (int x, int y); // m_lock
+  void render();
+  void set_view   (int x, int y);
+  void move_player(int x, int y);
+  void move_view  (int x, int y);
 
   bool parse_conditions(const event_conditions &conds, size_t size) const;
-  void parse_instructions  (const event_instructions &instructions); // m_lock
+  void parse_instructions  (const event_instructions &instructions);
 };
 
 static unique_ptr<scenario> single_scenario;
@@ -108,10 +107,9 @@ scenario::scenario(const string &f, render_f r_f, int l, int c) :
   m_lines(l), m_cols(c), m_render_f(r_f)
 {
   load(f);
+
   set_view((*m_player)->x() - m_cols/2,
            (*m_player)->y() - m_lines/2);
-  m_source.decorate();
-  render();
 }
 
 void scenario::load(const string& f)
@@ -122,7 +120,6 @@ void scenario::load(const string& f)
 
 void scenario::move_player(int x, int y)
 {
-  if (m_lock) return;
   int px = (*m_player)->x();
   int py = (*m_player)->y();
 
@@ -135,7 +132,7 @@ void scenario::move_player(int x, int y)
   if (abroad(npx, npy))
     return;
 
-  if ((*m_player)->move(x, y, m_source.at(npx, npy).symbol))
+  if ((*m_player)->move(x, y, m_source->at(npx, npy).symbol))
     {
       set_view(npx - m_cols / 2, npy - m_lines / 2);
       turn();
@@ -144,31 +141,28 @@ void scenario::move_player(int x, int y)
 
 void scenario::set_view(int x, int y)
 {
-  if (m_lock) return;
-
   if (!abroadx(x) && !abroadx(x + m_cols - 1))
-    m_source.setx(x);
+    m_source->setx(x);
 
   if (!abroady(y) && !abroady(y + m_lines - 1))
-    m_source.sety(y);
+    m_source->sety(y);
 }
 
 void scenario::move_view(int x, int y)
 {
-  if (m_lock) return;
-  set_view(m_source.x() + x, m_source.y() + y);
+  set_view(m_source->x() + x, m_source->y() + y);
 }
 
 void scenario::render_set_visible(int x, int y)
 {
-  m_render.at(x, y).attribute &= ~(A_INVIS | A_DIM);
-  m_render.at(x, y).attribute |= A_BOLD;
+  m_render->at(x, y).attribute &= ~(A_INVIS | A_DIM);
+  m_render->at(x, y).attribute |= A_BOLD;
 }
 
 void scenario::source_set_detected(int x, int y)
 {
-  m_source.at(x, y).attribute &= ~A_INVIS;
-  m_source.at(x, y).attribute |= A_DIM;
+  m_source->at(x, y).attribute &= ~A_INVIS;
+  m_source->at(x, y).attribute |= A_DIM;
 }
 
 void scenario::render_los(const object &viewer)
@@ -202,7 +196,7 @@ void scenario::render_los(const object &viewer)
           {
             source_set_detected(px, py);
             render_set_visible(px, py);
-            if (!viewer.visible(m_source.at(px, py).symbol))
+            if (!viewer.visible(m_source->at(px, py).symbol))
               goto next_line;
           }
 
@@ -225,7 +219,7 @@ void scenario::render_los(const object &viewer)
                   {
                     source_set_detected(px, py);
                     render_set_visible(px, py);
-                    if (!viewer.visible(m_source.at(px, py).symbol))
+                    if (!viewer.visible(m_source->at(px, py).symbol))
                       goto next_line;
                   }
               }
@@ -249,7 +243,7 @@ void scenario::render_los(const object &viewer)
                   {
                     source_set_detected(px, py);
                     render_set_visible(px, py);
-                    if (!viewer.visible(m_source.at(px, py).symbol))
+                    if (!viewer.visible(m_source->at(px, py).symbol))
                       goto next_line;
                   }
               }
@@ -276,18 +270,19 @@ void scenario::turn()
 }
 
 void scenario::render()
-{
-  m_render = m_source;
+{ 
+  m_render.reset(new map(*m_source));
+
   render_los(*m_player->get());
 
   for (auto& obj : m_objects)
     {
-      auto &tile = m_render.at(obj->x(), obj->y());
+      auto &tile = m_render->at(obj->x(), obj->y());
       tile.symbol = obj->symbol().symbol;
       tile.attribute &= ~COLOR_PAIR( PAIR_NUMBER(tile.attribute) );
       tile.attribute |=  COLOR_PAIR( PAIR_NUMBER(obj->symbol().attribute) );
     }
-  m_render_f(m_render.get_map(), x(), y());
+  m_render_f(m_render->get_map(), x(), y());
 }
 
 list<unique_ptr<object>>::const_iterator scenario::find_object(const string& id) const
@@ -300,7 +295,7 @@ list<unique_ptr<object>>::const_iterator scenario::find_object(const string& id)
   return m_objects.end();
 }
 
-list<unique_ptr<event>>::const_iterator scenario::find_event(const string& id) const
+vector<unique_ptr<event>>::const_iterator scenario::find_event(const string& id) const
 {
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
     {
@@ -310,8 +305,11 @@ list<unique_ptr<event>>::const_iterator scenario::find_event(const string& id) c
   return m_events.end();
 }
 
-void scenario::parse_call(const string &call, string &id, string &method, string &args) const
+std::tuple<string, string, string> parse_call(const string &call)
 {
+
+  string id, method, args;
+
   auto pointer  = call.find('.');
   auto cbracket = call.rfind(')');
   auto obracket = call.find('(');
@@ -331,15 +329,13 @@ void scenario::parse_call(const string &call, string &id, string &method, string
     args = "";
   else
     args = call.substr(obracket + 1, cbracket - (obracket + 1));
+
+  return std::make_tuple(id, method, args);
 }
 
 bool scenario::parse_condition(const string& cond) const
 {
-  string id;
-  string method;
-  string args;
-
-  parse_call(cond, id, method, args);
+  auto [id, method, args] = parse_call(cond);
 
   if (id.empty())
     {
@@ -392,11 +388,8 @@ bool scenario::parse_condition(const string& cond) const
 
 void scenario::parse_command(const string& comm)
 {
-  string id;
-  string method;
-  string args;
 
-  parse_call(comm, id, method, args);
+  auto [id, method, args] = parse_call(comm);
 
   if (id.empty())
     {
@@ -465,7 +458,6 @@ bool scenario::parse_conditions(const event_conditions &conds, size_t size) cons
 
 void scenario::parse_instructions(const event_instructions &instructions)
 {
-  if (m_lock) return;
   for (auto &f : instructions) parse_command(f);
 }
 
@@ -595,15 +587,15 @@ void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yam
 
       if (!strcmp(section_type, YAML_SECTION_OBJECTS))
         {
-          m_objects.emplace_front (object::create_from_yaml(key, node_value, doc));
+          m_objects.emplace_front(&object::create_from_yaml(key, node_value, doc));
           if (!strcmp(key, DEFAULT_PLAYER_ID))
             m_player = prev(m_objects.end());
         }
       else if (!strcmp(section_type, YAML_SECTION_MAPS))
-        m_source = map::create_from_yaml(key, node_value, doc);
+        m_source.reset(&map::create_from_yaml(key, node_value, doc));
 
       else if (!strcmp(section_type, YAML_SECTION_EVENTS))
-        m_events.emplace_front( event::create_from_yaml(key, node_value, doc) );
+        m_events.emplace_back(&event::create_from_yaml(key, node_value, doc));
       else
         throw game_error( string("Found unknown structure \"") + section_type + "\".");
 
@@ -619,14 +611,11 @@ void scenario::add_id(const string &id)
     m_identifiers.emplace_back(id);
 }
 
-void scenario_load(const char *f, render_f r_f, int l, int c)
+void scenario_load(const string &f, render_f r_f, int l, int c)
 { single_scenario.reset(new scenario(f, r_f, l, c)); }
 
-void scenario_unlock()
-{ if (single_scenario.get()) single_scenario->unlock(); }
-
-void scenario_lock()
-{ if (single_scenario.get()) single_scenario->lock(); }
+void scenario_render()
+{ if (single_scenario.get()) single_scenario->render(); }
 
 void scenario_set_view_x(arg_t arg)
 { if (single_scenario.get()) single_scenario->set_view(int(arg), 0); }

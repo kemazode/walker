@@ -20,14 +20,11 @@
 #include "window.hpp"
 #include "utils.hpp"
 
-#define LINES_BORDERS_WIDTH 1
-#define COLS_BORDERS_WIDTH 1
+#define HORIZONTAL_BORDER_WIDTH 1
+#define VERTICAL_BORDER_WIDTH 1
 
-#define LINES_BORDERS (LINES_BORDERS_WIDTH*2)
-#define COLS_BORDERS (COLS_BORDERS_WIDTH*2)
-
-#define TEXT_BORDER_INDENT_X 1
-#define TEXT_BORDER_INDENT_Y 1
+#define TEXT_INDENT_X 1
+#define TEXT_INDENT_Y 1
 
 #define TITLE_SEPARATION " "
 #define ITEM_DESCRIPTION " "
@@ -68,17 +65,15 @@ window *window_push(const struct builder &builder)
   struct location loc_w = window_get_location(builder.position);
 
   new_w->position = builder.position;
-  new_w->window   = newwin(loc_w.lines + LINES_BORDERS,
-                           loc_w.cols + COLS_BORDERS,
+  new_w->window   = newwin(loc_w.lines + (HORIZONTAL_BORDER_WIDTH * 2),
+                           loc_w.cols + (VERTICAL_BORDER_WIDTH * 2),
                            loc_w.y,
                            loc_w.x);
 
-  int nextline = LINES_BORDERS_WIDTH + TEXT_BORDER_INDENT_Y;
-  int sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
-
-  int desc_h = text_height(&builder.text, sub_window_width);
-
-  int field_height = 1 /* Indent */ + desc_h + 1 /* Indent */ + 1 /* Item */;
+  int nextline = HORIZONTAL_BORDER_WIDTH + TEXT_INDENT_Y;
+  int sub_window_width = loc_w.cols - 2*TEXT_INDENT_X;
+  int desc_height = text_height(&builder.text, sub_window_width);
+  int field_height = 1 /* Indent */ + desc_height + 1 /* Indent */ + 1 /* Item */;
 
   if (builder.image && builder.image->lenght)
     {
@@ -86,7 +81,7 @@ window *window_push(const struct builder &builder)
       for (int i = 0; i < int(builder.image->lenght); ++i)
         if (builder.image->cstr[i].symbol == '\n') ++image_height;
 
-      if (loc_w.lines - field_height < image_height)
+      if (loc_w.lines - field_height <= image_height)
         goto skip_image;
 
       if (builder.image_pos == IMAGE_POSITION_TOP) {
@@ -117,7 +112,8 @@ window *window_push(const struct builder &builder)
                                            image_height,
                                            sub_window_width,
                                            nextline,
-                                           COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
+                                           VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
+
           nextline += image_height + 1 /* Indent */;
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
         }
@@ -134,7 +130,7 @@ window *window_push(const struct builder &builder)
           ++image_width;
 
           /*  Recompute the standard width of the subwindow */
-          sub_window_width = loc_w.cols/2 - 2*TEXT_BORDER_INDENT_X;
+          sub_window_width = loc_w.cols/2 - 2*TEXT_INDENT_X;
 
           /*
           +-----------------+-----------------+
@@ -152,7 +148,7 @@ window *window_push(const struct builder &builder)
           */
 
           int image_x = sub_window_width + (sub_window_width - image_width)/2;
-          int image_y = (loc_w.lines - image_height)/2 + LINES_BORDERS_WIDTH;
+          int image_y = (loc_w.lines - image_height)/2 + HORIZONTAL_BORDER_WIDTH;
 
           if (image_x <= sub_window_width)
             {
@@ -163,13 +159,12 @@ window *window_push(const struct builder &builder)
           /* Set to center */
           new_w->sub_window_image = derwin(new_w->window,
                                            image_height,
-                                           image_width + COLS_BORDERS,
+                                           image_width + (VERTICAL_BORDER_WIDTH * 2),
                                            image_y,
                                            image_x);
 
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
           //box(new_w->sub_window_image, 0,0);
-
         }
     }
   else
@@ -182,11 +177,11 @@ window *window_push(const struct builder &builder)
     {
       /* Text drawing */
       new_w->sub_window_text = derwin(new_w->window,
-                                      desc_h,
+                                      desc_height,
                                       sub_window_width,
                                       nextline,
-                                      COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-      nextline += (desc_h + 1);
+                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
+      nextline += (desc_height + 1);
       mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text, builder.text_format);      
     } else
     new_w->sub_window_text = nullptr;
@@ -202,14 +197,14 @@ window *window_push(const struct builder &builder)
                                       menu_h,
                                       sub_window_width,
                                       nextline,
-                                      COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
+                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
 
 
       new_w->sub_window_desc = derwin(new_w->window,
                                       1,
                                       sub_window_width,
-                                      getmaxy(new_w->window) - LINES_BORDERS,
-                                      COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
+                                      getmaxy(new_w->window) - (HORIZONTAL_BORDER_WIDTH * 2),
+                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
 
       new_w->items = new ITEM *[size_t(new_w->items_c) + 1];
 
@@ -392,7 +387,7 @@ void window_print(const vector<text> &vec, int x, int y)
       if (top_window->sub_window_text)
         wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
       else
-        top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, LINES_BORDERS_WIDTH, COLS_BORDERS_WIDTH);
+        top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, HORIZONTAL_BORDER_WIDTH, VERTICAL_BORDER_WIDTH);
     }
 
   wmove(top_window->sub_window_text, 0, 0);
@@ -556,9 +551,9 @@ int waddcchar(WINDOW *w, const struct cchar *t)
 struct location window_get_location(enum position p)
 {
   switch (p) {
-    case POSITION_FULL:  return location{0, 0, LINES - LINES_BORDERS, COLS - COLS_BORDERS};
-    case POSITION_AVERAGE:  return location{COLS/8, LINES/8, LINES - LINES/4 - LINES_BORDERS, COLS - COLS/4 - COLS_BORDERS};
-    case POSITION_SMALL: return location{COLS/4, LINES/4, LINES/2 - LINES_BORDERS, COLS/2 - COLS_BORDERS};
+    case POSITION_FULL:  return location{0, 0, LINES - (HORIZONTAL_BORDER_WIDTH * 2), COLS - (VERTICAL_BORDER_WIDTH * 2)};
+    case POSITION_AVERAGE:  return location{COLS/8, LINES/8, LINES - LINES/4 - (HORIZONTAL_BORDER_WIDTH * 2), COLS - COLS/4 - (VERTICAL_BORDER_WIDTH * 2)};
+    case POSITION_SMALL: return location{COLS/4, LINES/4, LINES/2 - (HORIZONTAL_BORDER_WIDTH * 2), COLS/2 - (VERTICAL_BORDER_WIDTH * 2)};
     }
   return location{0, 0, 0, 0};
 }

@@ -76,11 +76,18 @@ window *window_push(const struct builder &builder)
   int nextline = LINES_BORDERS_WIDTH + TEXT_BORDER_INDENT_Y;
   int sub_window_width = loc_w.cols - 2*TEXT_BORDER_INDENT_X;
 
+  int desc_h = text_height(&builder.text, sub_window_width);
+
+  int field_height = 1 /* Indent */ + desc_h + 1 /* Indent */ + 1 /* Item */;
+
   if (builder.image && builder.image->lenght)
     {
-      int text_h = 0;
+      int image_height = 0;
       for (int i = 0; i < int(builder.image->lenght); ++i)
-        if (builder.image->cstr[i].symbol == '\n') ++text_h;
+        if (builder.image->cstr[i].symbol == '\n') ++image_height;
+
+      if (loc_w.lines - field_height < image_height)
+        goto skip_image;
 
       if (builder.image_pos == IMAGE_POSITION_TOP) {
 
@@ -107,11 +114,11 @@ window *window_push(const struct builder &builder)
           --nextline;
 
           new_w->sub_window_image = derwin(new_w->window,
-                                           text_h,
+                                           image_height,
                                            sub_window_width,
                                            nextline,
                                            COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-          nextline += text_h + 1;
+          nextline += image_height + 1 /* Indent */;
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
         }
       else if (builder.image_pos == IMAGE_POSITION_LEFT)
@@ -145,40 +152,47 @@ window *window_push(const struct builder &builder)
           */
 
           int image_x = sub_window_width + (sub_window_width - image_width)/2;
-          int image_y = (loc_w.lines - text_h)/2 + LINES_BORDERS_WIDTH;
+          int image_y = (loc_w.lines - image_height)/2 + LINES_BORDERS_WIDTH;
+
+          if (image_x <= sub_window_width)
+            {
+              sub_window_width = loc_w.cols;
+              goto skip_image;
+            }
 
           /* Set to center */
           new_w->sub_window_image = derwin(new_w->window,
-                                           text_h,
+                                           image_height,
                                            image_width + COLS_BORDERS,
                                            image_y,
                                            image_x);
 
           mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
           //box(new_w->sub_window_image, 0,0);
+
         }
     }
   else
-    new_w->sub_window_image = nullptr;
+    {
+      skip_image:
+      new_w->sub_window_image = nullptr;
+    }
 
   if (builder.text.lenght)
     {
-      int text_h = text_height(&builder.text, sub_window_width);
-
       /* Text drawing */
       new_w->sub_window_text = derwin(new_w->window,
-                                      text_h,
+                                      desc_h,
                                       sub_window_width,
                                       nextline,
                                       COLS_BORDERS_WIDTH + TEXT_BORDER_INDENT_X);
-      nextline += (text_h + 1);
+      nextline += (desc_h + 1);
       mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text, builder.text_format);      
     } else
     new_w->sub_window_text = nullptr;
 
   if (builder.items)
     {
-      /* Menu subwin creating */
       new_w->items_c = items_count(builder.items);
 
       int menu_h = (new_w->items_c < loc_w.lines - nextline)?

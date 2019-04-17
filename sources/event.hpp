@@ -74,7 +74,8 @@ class event : public base
 public:
 
     event(event &&) = default;
-    event(const event &) = delete;
+
+    event(const event &)            = delete;
     event& operator=(const event &) = delete;
 
     /* If the check is successful, then execute actions */

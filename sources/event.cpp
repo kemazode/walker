@@ -77,11 +77,11 @@ event& event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
     }
 
   constexpr int HOOKS_SIZE = 5;
-  constexpr int HOOK_MENU = 0;
+  constexpr int HOOK_MENU = 1;
   event->m_event_hooks.reset(new hook[HOOKS_SIZE]
   {
-    hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}), // HOOK_MENU
     hook('\n',     {fun_t(window_pop), 0}),
+    hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}), // HOOK_MENU
     hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
     hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),
     {0, {nullptr, 0}}
@@ -101,8 +101,9 @@ event& event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
     }
   else
     {
-      event->m_event_hooks.get()[HOOK_MENU].action.function = selected;
-      event->m_event_hooks.get()[HOOK_MENU].action.arg = arg_t(&event->m_instructions);
+      auto &run = event->m_event_hooks.get()[HOOK_MENU].action;
+      run.function = selected;
+      run.arg = arg_t(&event->m_instructions);
     }
 
   return *event;

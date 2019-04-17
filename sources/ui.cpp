@@ -259,7 +259,7 @@ void scenario_init(arg_t arg)
   auto location = window_get_location(build[BUILD_GAME].position);
 
   try {
-    scenario_load(scene, window_print, location.lines, location.cols);
+    scenario_create_from_config(scene, window_print, location.lines, location.cols);
 
   } catch(const game_error &error)  {  
     window_push(BUILD_ERROR, error.what());    

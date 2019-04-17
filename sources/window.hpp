@@ -94,7 +94,7 @@ struct hook
 
   hook() = default;
   hook(int k, struct action &&a)
-    : key(k), action(a) {}
+    : key(k), action(a) {} 
 };
 
 struct builder

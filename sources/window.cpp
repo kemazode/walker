@@ -350,15 +350,17 @@ void window_hook()
 {
   if (!top_window) return;
 
-  struct window *cur = top_window;
+  struct hook *hks = top_window->hooks;
+  int hks_c = top_window->hooks_c;
 
   int key = getch();
 
-  /* "cur == top_window &&" нужен в случае, если вызов какой-то команды удалит окно/стек окон,
-     * или создаст новое, при этом указатель может повиснет на освобожденной структуре*/
-  for (int i = 0; cur == top_window && i < cur->hooks_c; ++i)
-    if (cur->hooks[i].key == key)
-        cur->hooks[i].action();
+  /* Так как struct window хранит только указатель
+   * на hooks, то после удаления окна можно продолжать выполнять
+   * команды определенные хуками */
+  for (int i = 0; i < hks_c; ++i)
+    if (hks[i].key == key)
+        hks[i].action();
 }
 
 void window_print(const vector<text> &vec, int x, int y)

@@ -47,21 +47,24 @@ using std::string;
 
 void parse_call(const string &call, string &id, string &method, string &args);
 
+using events = vector<unique_ptr<event>>;
+using objects = list<unique_ptr<object>>;
+
 class scenario {
 
-  string                             m_file;
-  int                                m_lines;
-  int                                m_cols;
-  unique_ptr<map>                    m_source      = nullptr;
-  unique_ptr<map>                    m_render      = nullptr;
-  render_f                           m_render_f;
-  vector<unique_ptr<event>>          m_events;
-  list<unique_ptr<object>>           m_objects;
-  list<unique_ptr<object>>::iterator m_player      = m_objects.end();
-  vector<string>                     m_identifiers = {RESERVED_SCENARIO_ID};
+  string                          m_file;
+  int                             m_lines;
+  int                             m_cols;
+  unique_ptr<map>                 m_source      = nullptr;
+  unique_ptr<map>                 m_render      = nullptr;
+  render_f                        m_render_f;
+  events                          m_events;
+  objects                         m_objects;
+  objects::iterator               m_player      = m_objects.end();
+  vector<string>                  m_identifiers = {RESERVED_SCENARIO_ID};
 
-  list<unique_ptr<object>>::const_iterator find_object(const string& id) const;
-  vector<unique_ptr<event>>::const_iterator  find_event(const string& id) const;
+  objects::const_iterator find_object(const string& id) const;
+  events::const_iterator  find_event(const string& id) const;
 
   bool abroad(int x, int y) const
   { return x >= m_source->width() || y >= m_source->height() || x < 0 || y < 0; }
@@ -89,6 +92,11 @@ class scenario {
   int y()      const { return m_source->y(); }
 
 public:
+
+  scenario(scenario &&) = default;
+
+  scenario(const scenario &)            = delete;
+  scenario& operator=(const scenario &) = delete;
 
   scenario(const string &f, render_f r_f, int l, int c);
 
@@ -259,13 +267,13 @@ void scenario::turn()
      * events and pop-up windows */
   render();
 
-  for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
+  for (auto &event : m_events)
     {
-      (*iter)->test();
+      event->test();
 
-      /* Increase turns after exec */
-      if ((*iter)->happened())
-        (*iter)->inc();
+      /* Increase event turns if it was happened */
+      if (event->happened())
+        event->inc();
     }
 }
 
@@ -285,7 +293,7 @@ void scenario::render()
   m_render_f(m_render->get_map(), x(), y());
 }
 
-list<unique_ptr<object>>::const_iterator scenario::find_object(const string& id) const
+objects::const_iterator scenario::find_object(const string& id) const
 {
   for (auto iter = m_objects.begin(); iter != m_objects.end(); ++iter)
     {
@@ -295,7 +303,7 @@ list<unique_ptr<object>>::const_iterator scenario::find_object(const string& id)
   return m_objects.end();
 }
 
-vector<unique_ptr<event>>::const_iterator scenario::find_event(const string& id) const
+events::const_iterator scenario::find_event(const string& id) const
 {
   for (auto iter = m_events.begin(); iter != m_events.end(); ++iter)
     {
@@ -417,7 +425,7 @@ void scenario::parse_command(const string& comm)
         {
           if (method == "run")
             {
-              event->get()->run();
+              (*event)->run();
             }
           return;
         }
@@ -611,7 +619,7 @@ void scenario::add_id(const string &id)
     m_identifiers.emplace_back(id);
 }
 
-void scenario_load(const string &f, render_f r_f, int l, int c)
+void scenario_create_from_config(const string &f, render_f r_f, int l, int c)
 { single_scenario.reset(new scenario(f, r_f, l, c)); }
 
 void scenario_render()

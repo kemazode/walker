@@ -147,11 +147,11 @@ const static text descs[] =
   "Create your own map.",
   "Select map size:",
 
-  text("General", PAIR(FRIEND_COLOR, COLOR_BLACK)|A_BOLD) + ":\n\
+  text("General", PAIR(NEUTRAL_COLOR, COLOR_BLACK)|A_BOLD) + ":\n\
   Q/q      - Close the window (not the main menu).\n\
   Enter    - Choosing.\n\
   Up, Down - Menu navigation.\n\n" +
-  text("Game", PAIR(FRIEND_COLOR, COLOR_BLACK)|A_BOLD) + ":\n\
+  text("Game", PAIR(NEUTRAL_COLOR, COLOR_BLACK)|A_BOLD) + ":\n\
   i/I, j/J, k/K, l/L    - Map view moving.\n\
   Up, Down, Right, Left - Player moving.\n\
   Q/q                   - Open game menu.\n\

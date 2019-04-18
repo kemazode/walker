@@ -119,7 +119,7 @@ void event::run()
    {
       auto &&menu_build = builder(m_position, m_event_menu.get(), m_event_hooks.get(),
                                   m_message, m_title, OPTION_NORMAL, FORMAT_CENTER,
-                                  &m_image, m_image_pos, FORMAT_CENTER_RIGHT, m_attribute);
+                                  &m_image, m_image_pos, m_attribute);
       window_push(menu_build);
     }
 }

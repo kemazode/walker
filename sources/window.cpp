@@ -73,7 +73,6 @@ window *window_push(const struct builder &builder)
   int nextline = HORIZONTAL_BORDER_WIDTH + TEXT_INDENT_Y;
   int sub_window_width = loc_w.cols - 2*TEXT_INDENT_X;
   int desc_height = text_height(&builder.text, sub_window_width);
-  int field_height = 1 /* Indent */ + desc_height + 1 /* Indent */ + 1 /* Item */;
 
   if (builder.image && builder.image->lenght)
     {
@@ -112,7 +111,7 @@ window *window_push(const struct builder &builder)
                                            VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
 
           nextline += image_height + 1 /* Indent */;
-          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
+          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, FORMAT_CENTER_RIGHT);
         }
       else if (builder.image_pos == IMAGE_POSITION_LEFT)
         {
@@ -154,7 +153,7 @@ window *window_push(const struct builder &builder)
                                            image_y,
                                            image_x);
 
-          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, builder.image_format);
+          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, FORMAT_CENTER_RIGHT);
           //box(new_w->sub_window_image, 0,0);
         }
     }

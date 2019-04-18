@@ -81,9 +81,6 @@ window *window_push(const struct builder &builder)
       for (int i = 0; i < int(builder.image->lenght); ++i)
         if (builder.image->cstr[i].symbol == '\n') ++image_height;
 
-      if (loc_w.lines - field_height <= image_height)
-        goto skip_image;
-
       if (builder.image_pos == IMAGE_POSITION_TOP) {
 
           /*
@@ -150,12 +147,6 @@ window *window_push(const struct builder &builder)
           int image_x = sub_window_width + (sub_window_width - image_width)/2;
           int image_y = (loc_w.lines - image_height)/2 + HORIZONTAL_BORDER_WIDTH;
 
-          if (image_x <= sub_window_width)
-            {
-              sub_window_width = loc_w.cols;
-              goto skip_image;
-            }
-
           /* Set to center */
           new_w->sub_window_image = derwin(new_w->window,
                                            image_height,
@@ -168,10 +159,7 @@ window *window_push(const struct builder &builder)
         }
     }
   else
-    {
-      skip_image:
       new_w->sub_window_image = nullptr;
-    }
 
   if (builder.text.lenght)
     {

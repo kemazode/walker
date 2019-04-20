@@ -21,8 +21,6 @@
 #include <yaml.h>
 #include <cmath>
 #include <algorithm>
-
-#include <list>
 #include <string>
 #include <memory>
 
@@ -42,26 +40,25 @@ using std::getline;
 using std::find;
 using std::prev;
 using std::unique_ptr;
-using std::list;
 using std::string;
 
 void parse_call(const string &call, string &id, string &method, string &args);
 
 using events = vector<unique_ptr<event>>;
-using objects = list<unique_ptr<object>>;
+using objects = vector<unique_ptr<object>>;
 
 class scenario {
 
-  string                          m_file;
-  int                             m_lines;
-  int                             m_cols;
-  unique_ptr<map>                 m_source      = nullptr;
-  unique_ptr<map>                 m_render      = nullptr;
-  render_f                        m_render_f;
-  events                          m_events;
-  objects                         m_objects;
-  objects::iterator               m_player      = m_objects.end();
-  vector<string>                  m_identifiers = {RESERVED_SCENARIO_ID};
+  string                    m_file;
+  int                       m_lines;
+  int                       m_cols;
+  unique_ptr<character_map> m_source      = nullptr;
+  unique_ptr<character_map> m_render      = nullptr;
+  render_f                  m_render_f;
+  events                    m_events;
+  objects                   m_objects;
+  objects::iterator         m_player      = m_objects.end();
+  vector<string>            m_identifiers = {RESERVED_SCENARIO_ID};
 
   objects::const_iterator find_object(const string& id) const;
   events::const_iterator  find_event(const string& id) const;
@@ -279,7 +276,7 @@ void scenario::turn()
 
 void scenario::render()
 { 
-  m_render.reset(new map(*m_source));
+  m_render.reset(new character_map(*m_source));
 
   render_los(*m_player->get());
 
@@ -595,12 +592,12 @@ void scenario::parse_yaml(const char *section_type, const yaml_node_t *node, yam
 
       if (!strcmp(section_type, YAML_SECTION_OBJECTS))
         {
-          m_objects.emplace_front(&object::create_from_yaml(key, node_value, doc));
+          m_objects.emplace_back(&object::create_from_yaml(key, node_value, doc));
           if (!strcmp(key, DEFAULT_PLAYER_ID))
             m_player = prev(m_objects.end());
         }
       else if (!strcmp(section_type, YAML_SECTION_MAPS))
-        m_source.reset(&map::create_from_yaml(key, node_value, doc));
+        m_source.reset(&character_map::create_from_yaml(key, node_value, doc));
 
       else if (!strcmp(section_type, YAML_SECTION_EVENTS))
         m_events.emplace_back(&event::create_from_yaml(key, node_value, doc));

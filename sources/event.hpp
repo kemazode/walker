@@ -18,7 +18,6 @@
 #define EVENT_HPP
 
 #include <string>
-#include <vector>
 #include <memory>
 
 #include "scenario_constants.hpp"
@@ -28,7 +27,6 @@
 #include "base.hpp"
 
 using std::unique_ptr;
-using std::vector;
 using std::string;
 
 using event_instructions = vector<string>;

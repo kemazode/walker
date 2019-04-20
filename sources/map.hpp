@@ -13,7 +13,7 @@ using std::string;
 typedef struct yaml_node_s yaml_node_t;
 typedef struct yaml_document_s yaml_document_t;
 
-class map  : public base
+class character_map  : public base
 {
     int m_x, m_y;
 
@@ -23,15 +23,15 @@ class map  : public base
     void decorate();
     void push(const string &s);
 
-    map(const string &id, const string &map, int w, int h);
+    character_map(const string &id, const string &map, int w, int h);
 
 public:
 
-  map(map &&)                 = default;
-  map(const map &)            = default;
-  map& operator=(const map &) = default;
+  character_map(character_map &&)                 = default;
+  character_map(const character_map &)            = default;
+  character_map& operator=(const character_map &) = default;
 
-  static map& create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
+  static character_map& create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc);
 
   static void   generate(const string &f, int w, int h);
   static string generate(int w, int h);

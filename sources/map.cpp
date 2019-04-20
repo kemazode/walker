@@ -14,7 +14,7 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
-#include <unordered_map>
+#include <map>
 #include <fstream>
 #include <yaml.h>
 
@@ -25,8 +25,8 @@
 
 #define FILE_GENERATE "Generation.txt"
 
+using std::map;
 using std::ofstream;
-using std::unordered_map;
 using std::ifstream;
 using std::to_string;
 
@@ -34,7 +34,7 @@ using std::to_string;
 static string nextgen(const string& s, int count);
 
 static char textures[] = { '~', '#', '\'', '`' };
-static unordered_map<char, attr_t> map_attrs = {
+static map<char, attr_t> map_attrs = {
   {'~',  PAIR(COLOR_BLUE, COLOR_BLACK)  | DEFAULT_TILE_ATTRIBUTE},
   {'#',  PAIR(COLOR_WHITE, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
   {'\'', PAIR(COLOR_GREEN, COLOR_BLACK) | DEFAULT_TILE_ATTRIBUTE},
@@ -44,7 +44,7 @@ static unordered_map<char, attr_t> map_attrs = {
   {')',  PAIR(COLOR_RED, COLOR_BLACK)   | DEFAULT_TILE_ATTRIBUTE},
 };
 
-void map::push(const string &s)
+void character_map::push(const string &s)
 {
   if (s.empty())
     throw game_error("Line " + to_string(m_height + 1)
@@ -64,7 +64,7 @@ void map::push(const string &s)
   m_lines.emplace_back(s);
 }
 
-map::map(const string &id, const string &map, int w, int h) : base(id)
+character_map::character_map(const string &id, const string &map, int w, int h) : base(id)
 {
   m_x = 0;
   m_y = 0;
@@ -81,7 +81,7 @@ map::map(const string &id, const string &map, int w, int h) : base(id)
   this->decorate();
 }
 
-map& map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
+character_map& character_map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_document_t *doc)
 {
   string text;
   int w = 0;
@@ -115,10 +115,10 @@ map& map::create_from_yaml(const string &id, const yaml_node_t *node, yaml_docum
         throw game_error( string("Found unknown field \"") + key + "\" in the map structure.");
     }
 
-  return *new map(id, text, w, h);
+  return *new character_map(id, text, w, h);
 }
 
-void map::decorate()
+void character_map::decorate()
 {
   for (auto& line : m_lines) for (size_t i = 0; i < line.lenght; ++i)
     {
@@ -130,7 +130,7 @@ void map::decorate()
     }
 }
 
-void map::generate(const string& f, int w, int h)
+void character_map::generate(const string& f, int w, int h)
 {
   srand(unsigned(time(nullptr)));
   perlin_set_seed(rand());
@@ -156,7 +156,7 @@ void map::generate(const string& f, int w, int h)
   }
 }
 
-string map::generate(int w, int h)
+string character_map::generate(int w, int h)
 {
   const char* home = getenv("HOME");
 

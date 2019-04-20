@@ -278,7 +278,7 @@ void map_generate(arg_t arg)
   window_pop();
   try {
     /* Square-shaped map */
-    fil = map::generate(int(arg), int(arg));
+    fil = character_map::generate(int(arg), int(arg));
 
   } catch (const game_error& error) {
     window_push(BUILD_ERROR, error.what());

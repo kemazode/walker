@@ -19,12 +19,6 @@
 
 #include "utils.hpp"
 
-enum image_position
-{
-  IMAGE_POSITION_TOP,
-  IMAGE_POSITION_LEFT,
-};
-
 enum image
 {
   IMAGE_COW,

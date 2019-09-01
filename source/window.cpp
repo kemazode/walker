@@ -14,17 +14,36 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+
+/*
+          +-----------------------------------+
+          |                                   |
+          | +-------------------------------+ |
+          | |                               | |
+          | |             image             | |
+          | |                               | |
+          | |                               | |
+          | +-------------------------------+ |
+          | _________________________________ |
+          |                                   |
+          |               title               |
+          |                                   |
+          |    subscription...                |
+          |                                   |
+          |    - item                         |
+          |                                   |
+          +-----------------------------------+
+*/
+
 #include <cstdlib>
 #include <cmath>
 
 #include "window.hpp"
 #include "utils.hpp"
 
-#define HORIZONTAL_BORDER_WIDTH 1
-#define VERTICAL_BORDER_WIDTH 1
-
-#define TEXT_INDENT_X 1
-#define TEXT_INDENT_Y 1
+#define DESCRIPTION_HORIZONTAL_INTEND 1
+#define HORIZONTAL_INTEND 2
+#define VERTICAL_INTEND 2
 
 #define TITLE_SEPARATION " "
 #define ITEM_DESCRIPTION " "
@@ -34,8 +53,12 @@ static int text_height(const struct text *t, int freecols);
 static int waddtext(WINDOW *w, const struct text *t, format f);
 static int waddcchar(WINDOW *w, const struct cchar *t);
 
-static int items_count(struct item *);
-static int hooks_count(struct hook *);
+static int items_count(const item *);
+static int hooks_count(const hook *);
+
+static int put_image(struct window *, const struct text *, int& nextline);
+static int put_text(struct window *, const struct text &, enum format, int& nextline);
+static int put_menu(struct window *, const struct item *, attr_t attribute, int& nextline);
 
 inline int mvwaddtext(WINDOW *w, int x, int y, const text *t, format f)
 { return wmove(w,y,x) == ERR ? ERR : waddtext(w,t,f); }
@@ -61,181 +84,37 @@ static struct window *top_window = nullptr;
 
 window *window_push(const struct builder &builder)
 {
-  struct window *new_w = new window;
+  struct window *new_w = new window;  
   struct location loc_w = window_get_location(builder.position);
 
   new_w->position = builder.position;
-  new_w->window   = newwin(loc_w.lines + (HORIZONTAL_BORDER_WIDTH * 2),
-                           loc_w.cols + (VERTICAL_BORDER_WIDTH * 2),
+  new_w->window   = newwin(loc_w.lines + (HORIZONTAL_INTEND * 2),
+                           loc_w.cols + (VERTICAL_INTEND * 2),
                            loc_w.y,
                            loc_w.x);
 
-  int nextline = HORIZONTAL_BORDER_WIDTH + TEXT_INDENT_Y;
-  int sub_window_width = loc_w.cols - 2*TEXT_INDENT_X;
-  int desc_height = text_height(&builder.text, sub_window_width);
+  int nextline = HORIZONTAL_INTEND;
+  //  int sub_window_width = loc_w.cols - 2*TEXT_INDENT_X;
 
   if (builder.image && builder.image->lenght)
-    {
-      int image_height = 0;
-      for (int i = 0; i < int(builder.image->lenght); ++i)
-        if (builder.image->cstr[i].symbol == '\n') ++image_height;
-
-      if (builder.image_pos == IMAGE_POSITION_TOP) {
-
-          /*
-          +-----------------------------------+
-          |                                   |
-          | +-------------------------------+ |
-          | |                               | |
-          | |             image             | |
-          | |                               | |
-          | |                               | |
-          | +-------------------------------+ |
-          | _________________________________ |
-          |                                   |
-          |               title               |
-          |                                   |
-          |    subscription...                |
-          |                                   |
-          |    - item                         |
-          |                                   |
-          +-----------------------------------+
-          */
-          /* "--nextline" because image hasn't top border */
-          --nextline;
-
-          new_w->sub_window_image = derwin(new_w->window,
-                                           image_height,
-                                           sub_window_width,
-                                           nextline,
-                                           VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
-
-          nextline += image_height + 1 /* Indent */;
-          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, FORMAT_CENTER_RIGHT);
-        }
-      else if (builder.image_pos == IMAGE_POSITION_LEFT)
-        {
-          /* Determine the width of the image */
-          int image_width = int(builder.image->lenght) + 1;
-          for (int i = 0; i < int(builder.image->lenght); ++i)
-            if (builder.image->cstr[i].symbol == '\n')
-              {
-                image_width = i;
-                break;
-              }
-          ++image_width;
-
-          /*  Recompute the standard width of the subwindow */
-          sub_window_width = loc_w.cols/2 - 2*TEXT_INDENT_X;
-
-          /*
-          +-----------------+-----------------+
-          |                 |                 |
-          |      title      |   +---------+   |
-          |                 |   |         |   |
-          |  subscription.  |   |  image  |   |
-          |                 |   |         |   |
-          |  - item         |   |         |   |
-          |                 |   |         |   |
-          |  - item         |   |         |   |
-          |                 |   +---------+   |
-          |                 |                 |
-          +-----------------+-----------------+
-          */
-
-          int image_x = sub_window_width + (sub_window_width - image_width)/2;
-          int image_y = (loc_w.lines - image_height)/2 + HORIZONTAL_BORDER_WIDTH;
-
-          /* Set to center */
-          new_w->sub_window_image = derwin(new_w->window,
-                                           image_height,
-                                           image_width + (VERTICAL_BORDER_WIDTH * 2),
-                                           image_y,
-                                           image_x);
-
-          mvwaddtext(new_w->sub_window_image, 0, 0, builder.image, FORMAT_CENTER_RIGHT);
-          //box(new_w->sub_window_image, 0,0);
-        }
-    }
+      put_image(new_w, builder.image, nextline);
   else
       new_w->sub_window_image = nullptr;
 
+  //int description_height = text_height(&builder.text, sub_window_width);
   if (builder.text.lenght)
-    {
-      /* Text drawing */
-      new_w->sub_window_text = derwin(new_w->window,
-                                      desc_height,
-                                      sub_window_width,
-                                      nextline,
-                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
-      nextline += (desc_height + 1);
-      mvwaddtext(new_w->sub_window_text, 0, 0, &builder.text, builder.text_format);      
-    } else
-    new_w->sub_window_text = nullptr;
+      put_text(new_w, builder.text, builder.text_format, nextline);
+  else
+      new_w->sub_window_text = nullptr;
 
   if (builder.items)
-    {
-      new_w->items_c = items_count(builder.items);
-
-      int menu_h = (new_w->items_c < loc_w.lines - nextline)?
-            new_w->items_c : loc_w.lines - nextline;
-
-      new_w->sub_window_menu = derwin(new_w->window,
-                                      menu_h,
-                                      sub_window_width,
-                                      nextline,
-                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
-
-
-      new_w->sub_window_desc = derwin(new_w->window,
-                                      1,
-                                      sub_window_width,
-                                      getmaxy(new_w->window) - (HORIZONTAL_BORDER_WIDTH * 2),
-                                      VERTICAL_BORDER_WIDTH + TEXT_INDENT_X);
-
-      new_w->items = new ITEM *[size_t(new_w->items_c) + 1];
-
-      for (int i = 0; i < new_w->items_c; ++i)
-        {
-          new_w->items[i] = new_item(builder.items[i].label, ITEM_DESCRIPTION);
-
-          /* If item doesn't have any function */
-          if (builder.items[i].action.function == nullptr)
-            item_opts_off(new_w->items[i], O_SELECTABLE);
-          else
-            set_item_userptr(new_w->items[i], &builder.items[i]);
-        }
-
-      new_w->items[new_w->items_c] = nullptr;
-
-      /* Link menu & window */
-      new_w->menu = new_menu(new_w->items);
-      set_menu_win(new_w->menu, new_w->window);
-      set_menu_sub(new_w->menu, new_w->sub_window_menu);
-
-      /* For menu scrolling */
-      set_menu_format(new_w->menu, menu_h, 1);
-
-      /* Set menu decorations */
-      set_menu_mark(new_w->menu, ITEM_SELECT);
-      set_menu_grey(new_w->menu, A_DIM);
-      set_menu_fore(new_w->menu, builder.attribute|A_BOLD);
-      set_menu_back(new_w->menu, PAIR(COLOR_WHITE, COLOR_BLACK));
-
-      /* Attaching */
-      post_menu(new_w->menu);
-
-      /* Print description */
-      auto item = reinterpret_cast<struct item *>(item_userptr(current_item(new_w->menu)));
-      if (item->description)
-        mvwaddstr(new_w->sub_window_desc, 0, 0, item->description);
-
-    } else {
+      put_menu(new_w, builder.items, builder.attribute, nextline);
+  else {
       new_w->menu  = nullptr;
       new_w->items = nullptr;
       new_w->sub_window_menu = nullptr;
       new_w->sub_window_desc = nullptr;
-    }
+  }
 
   /* Set window decorations */
   wattron(new_w->window, builder.attribute);
@@ -281,8 +160,8 @@ void window_pop()
 
   if (panel_b)
     /* set_panel_userptr takes userprt as "const void *",
-         * so if we want to get userptr for changing we need to reset const qualifier.
-         */
+     * so if we want to get userptr for changing we need to reset const qualifier.
+     */
     new_top_window = reinterpret_cast<struct window *>(const_cast<void *>(panel_userptr(panel_b)));
 
   if (top_window->menu) {
@@ -374,7 +253,7 @@ void window_print(const vector<text> &vec, int x, int y)
       if (top_window->sub_window_text)
         wresize(top_window->sub_window_text, loc_w.lines, loc_w.cols);
       else
-        top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, HORIZONTAL_BORDER_WIDTH, VERTICAL_BORDER_WIDTH);
+        top_window->sub_window_text = derwin(top_window->window, loc_w.lines, loc_w.cols, HORIZONTAL_INTEND, VERTICAL_INTEND);
     }
 
   wmove(top_window->sub_window_text, 0, 0);
@@ -536,11 +415,14 @@ int waddcchar(WINDOW *w, const struct cchar *t)
 }
 
 struct location window_get_location(enum position p)
-{
+{ /* Put this text indent as a second border */
   switch (p) {
-    case POSITION_FULL:  return location{0, 0, LINES - (HORIZONTAL_BORDER_WIDTH * 2), COLS - (VERTICAL_BORDER_WIDTH * 2)};
-    case POSITION_AVERAGE:  return location{COLS/8, LINES/8, LINES - LINES/4 - (HORIZONTAL_BORDER_WIDTH * 2), COLS - COLS/4 - (VERTICAL_BORDER_WIDTH * 2)};
-    case POSITION_SMALL: return location{COLS/4, LINES/4, LINES/2 - (HORIZONTAL_BORDER_WIDTH * 2), COLS/2 - (VERTICAL_BORDER_WIDTH * 2)};
+    case POSITION_FULL:
+      return location{0, 0, LINES - (HORIZONTAL_INTEND * 2), COLS - (VERTICAL_INTEND * 2)};
+    case POSITION_AVERAGE:
+      return location{COLS/8, LINES/8, LINES - LINES/4 - (HORIZONTAL_INTEND * 2), COLS - COLS/4 - (VERTICAL_INTEND * 2)};
+    case POSITION_SMALL:
+      return location{COLS/4, LINES/4, LINES/2 - (HORIZONTAL_INTEND * 2), COLS/2 - (VERTICAL_INTEND * 2)};
     }
   return location{0, 0, 0, 0};
 }
@@ -550,7 +432,7 @@ struct location window_get_location(void)
   return window_get_location(top_window->position);
 }
 
-static int items_count(struct item *i)
+static int items_count(const struct item *i)
 {
   if (!i) return 0;
   int count = 0;
@@ -562,7 +444,7 @@ static int items_count(struct item *i)
   return count;
 }
 
-static int hooks_count(struct hook *h)
+static int hooks_count(const struct hook *h)
 {
   if (!h) return 0;
   int count = 0;
@@ -571,4 +453,99 @@ static int hooks_count(struct hook *h)
          h->action.function != nullptr)
     { ++count; ++h; }
   return count;
+}
+
+
+static int put_image(struct window *win, const struct text *img, int& nextline)
+{
+    struct location loc = window_get_location(win->position);
+
+    // compute image height
+    int image_height = 0;
+    for (int i = 0; i < int(img->lenght); ++i)
+        if (img->cstr[i].symbol == '\n') ++image_height;
+
+    win->sub_window_image = derwin(win->window,
+                                     image_height,
+                                     loc.cols,
+                                     nextline,
+                                     VERTICAL_INTEND);
+
+    nextline += image_height + 1 /* Indent */;
+    return mvwaddtext(win->sub_window_image, 0, 0, img, FORMAT_CENTER_RIGHT);
+}
+
+static int put_text(struct window *win, const struct text &text, enum format text_format, int& nextline)
+{
+    struct location loc = window_get_location(win->position);
+    int height = text_height(&text, loc.cols);
+
+    /* Text drawing */
+    win->sub_window_text = derwin(win->window,
+                                    height,
+                                    loc.cols,
+                                    nextline,
+                                    VERTICAL_INTEND);
+    nextline += (height + 1);
+    return mvwaddtext(win->sub_window_text, 0, 0, &text, text_format);
+}
+
+static int put_menu(struct window *win, const struct item *items, attr_t attribute, int& nextline)
+{
+    struct location loc = window_get_location(win->position);
+    win->items_c = items_count(items);
+
+    int menu_h = (win->items_c < loc.lines - nextline)?
+                win->items_c : loc.lines - nextline;
+
+    win->sub_window_menu = derwin(win->window,
+                                    menu_h,
+                                    loc.cols,
+                                    nextline,
+                                    VERTICAL_INTEND);
+
+    win->sub_window_desc = derwin(win->window,
+                                    1,
+                                    loc.cols,
+                                    getmaxy(win->window) - (DESCRIPTION_HORIZONTAL_INTEND * 2),
+                                    VERTICAL_INTEND);
+
+    win->items = new ITEM *[size_t(win->items_c) + 1];
+
+    for (int i = 0; i < win->items_c; ++i)
+    {
+        win->items[i] = new_item(items[i].label, ITEM_DESCRIPTION);
+
+        /* If item doesn't have any function */
+        if (items[i].action.function == nullptr)
+            item_opts_off(win->items[i], O_SELECTABLE);
+        else
+            set_item_userptr(win->items[i], const_cast<struct item *>(&items[i]));
+    }
+
+    win->items[win->items_c] = nullptr;
+
+    /* Link menu & window */
+    win->menu = new_menu(win->items);
+    set_menu_win(win->menu, win->window);
+    set_menu_sub(win->menu, win->sub_window_menu);
+
+    /* For menu scrolling */
+    set_menu_format(win->menu, menu_h, 1);
+
+    /* Set menu decorations */
+    set_menu_mark(win->menu, ITEM_SELECT);
+    set_menu_grey(win->menu, A_DIM);
+    set_menu_fore(win->menu, attribute|A_BOLD);
+    set_menu_back(win->menu, PAIR(COLOR_WHITE, COLOR_BLACK));
+
+    /* Attaching */
+    post_menu(win->menu);
+
+    /* Print description */
+    auto item = reinterpret_cast<struct item *>(item_userptr(current_item(win->menu)));
+    if (item->description)
+        mvwaddstr(win->sub_window_desc, 0, 0, item->description);
+
+    return 0;
 }

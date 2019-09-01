@@ -26,7 +26,7 @@ static void parse_conditions_from_yaml   (const yaml_node_t *node, yaml_document
 static void parse_items_from_yaml        (const yaml_node_t *node, yaml_document_t *doc, event_items &items);
 static void parse_string_from_yaml       (const yaml_node_t *node, string &msg);
 static void parse_position_from_yaml     (const yaml_node_t *node, position &p);
-static void parse_image_from_yaml        (const yaml_node_t *node, yaml_document_t *doc, text &im, image_position &im_pos);
+static void parse_image_from_yaml        (const yaml_node_t *node, yaml_document_t *doc, text &im);
 static void parse_attribute_from_yaml    (const yaml_node_t *node, attr_t &attr);
 
 /* Dynamic alloc */
@@ -62,7 +62,7 @@ event& event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
         parse_string_from_yaml(node_value, event->m_message);
 
       else if (!strcmp(YAML_EVENT_IMAGE, key))
-        parse_image_from_yaml(node_value, doc, event->m_image, event->m_image_pos);
+        parse_image_from_yaml(node_value, doc, event->m_image);
 
       else if (!strcmp(YAML_EVENT_ITEMS, key))
         parse_items_from_yaml(node_value, doc, event->m_items);
@@ -119,7 +119,7 @@ void event::run()
    {
       auto &&menu_build = builder(m_position, m_event_menu.get(), m_event_hooks.get(),
                                   m_message, m_title, OPTION_NORMAL, FORMAT_CENTER,
-                                  &m_image, m_image_pos, m_attribute);
+                                  &m_image, m_attribute);
       window_push(menu_build);
     }
 }
@@ -246,7 +246,7 @@ static void parse_position_from_yaml(const yaml_node_t *node, position &p)
 
 }
 
-static void parse_image_from_yaml(const yaml_node_t *node, yaml_document_t *doc, text &im, image_position &im_pos)
+static void parse_image_from_yaml(const yaml_node_t *node, yaml_document_t *doc, text &im)
 {
   if (node->type != YAML_MAPPING_NODE)
     throw game_error("Incorrectly \"image\" field in the event structure.");
@@ -264,17 +264,6 @@ static void parse_image_from_yaml(const yaml_node_t *node, yaml_document_t *doc,
 
       if (!strcmp(YAML_EVENT_IMAGE_FILE, key))
         im = images_find(value);
-
-      else if (!strcmp(YAML_EVENT_IMAGE_POSITION, key))
-        {
-          if (!strcmp(value, YAML_IMAGE_POSITION_TOP))
-            im_pos = IMAGE_POSITION_TOP;
-
-          else if (!strcmp(value, YAML_IMAGE_POSITION_LEFT))
-            im_pos = IMAGE_POSITION_LEFT;
-          else
-            throw game_error(string("Invalid image position value \"") + value + "\" in the image position structure.");
-        }
       else
         throw game_error(string("Invalid image value \"") + value + "\" in the image structure.");
     }

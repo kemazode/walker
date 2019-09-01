@@ -107,7 +107,6 @@ struct builder
   enum option         options;
   enum format         text_format;
   const struct text  *image;
-  enum image_position image_pos;
   attr_t              attribute;
 
   builder(enum position p,
@@ -118,7 +117,6 @@ struct builder
           enum option o = OPTION_NORMAL,
           enum format ef = FORMAT_CENTER,
           const struct text *im = nullptr,
-          enum image_position impos = IMAGE_POSITION_TOP,
           attr_t attr = PAIR(NEUTRAL_COLOR, COLOR_BLACK))
     : position(p),
       items(i),
@@ -128,7 +126,6 @@ struct builder
       options(o),
       text_format(ef),
       image(im),
-      image_pos(impos),
       attribute(attr) {}
 };
 

@@ -36,12 +36,8 @@ constexpr attr_t         DEFAULT_EVENT_ATTRIBUTE   = PAIR(NEUTRAL_COLOR, COLOR_B
 constexpr const char    *DEFAULT_PLAYER_ID         = "player";
 constexpr const char    *DEFAULT_MAP_ID            = "map";
 constexpr int            DEFAULT_TILE_ATTRIBUTE    = A_INVIS;
-constexpr image_position DEFAULT_IMAGE_POSITION    = IMAGE_POSITION_TOP;
 
 constexpr const char *RESERVED_SCENARIO_ID = "scenario";
-
-constexpr const char *YAML_IMAGE_POSITION_TOP  = "Top";
-constexpr const char *YAML_IMAGE_POSITION_LEFT = "Left";
 
 constexpr const char *YAML_IMAGE_MOUNTAINS = "Mountains";
 constexpr const char *YAML_IMAGE_COW       = "Cow";

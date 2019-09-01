@@ -63,7 +63,6 @@ class event : public base
     string             m_title;
     position           m_position  = DEFAULT_EVENT_SIZE;
     text               m_image;
-    image_position     m_image_pos = DEFAULT_IMAGE_POSITION;
     bool               m_happened  = false;
     int                m_count     = 0;
 

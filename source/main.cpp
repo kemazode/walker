@@ -14,6 +14,7 @@
  * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
 */
 
+#include <iostream>
 #include <sys/ioctl.h>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -21,14 +22,26 @@
 #include <cstring>
 #include <csignal>
 #include <cerrno>
+#include <unistd.h>
 #include "ui.hpp"
 
 static void sig_winch(const int signo);
 static void mkdir_parents(const char *dir);
 static void init_dirs();
 
-int main()
-{    
+int main(int argc, char **argv)
+{      
+  int c;
+  while ((c = getopt(argc, argv, "hc:")) != -1)
+    switch (c) {
+      case 'c':
+        CUSTOM_CONFIG = optarg;
+        break;
+    default:
+        std::cerr << HELP_MESSAGE;
+        return 1;
+    }
+
   initscr();
   signal(SIGWINCH, sig_winch);
   curs_set(FALSE);
@@ -59,33 +72,46 @@ void sig_winch(const int signo)
 
 void init_dirs()
 {
-  const char *home = getenv("HOME");
+    char path[FILE_COUNT][PATH_MAX] {};
 
-  if (!home)
+    /* If custom config is not set */
+    if (!CUSTOM_CONFIG)
     {
-      window_push(BUILD_ERROR, "HOME variable is not set.");
-      return;
+        const char *home = getenv("HOME");
+
+        if (!home)
+        {
+            window_push(BUILD_ERROR, "HOME variable is not set.");
+            return;
+        }
+
+        for (int i = 0; i < FILE_COUNT; ++i)
+        {
+            strcat(path[i], home);
+            strcat(path[i], "/");
+        }
+
+        strcat(path[0], DEFAULT_CONFIG);
+        strcat(path[1], DEFAULT_CONFIG);
+    }
+    else {
+        strcat(path[0], CUSTOM_CONFIG);
+        strcat(path[1], CUSTOM_CONFIG);
+        strcat(path[0], "/");
+        strcat(path[1], "/");
     }
 
-  char path[FILE_COUNT][PATH_MAX] {};
+    strcat(path[0], DIR_SCENARIOS);
+    strcat(path[1], DIR_GENERATIONS);
 
-  for (int i = 0; i < FILE_COUNT; ++i)
+    FILE *f;
+
+    for (int i = 0; i < FILE_COUNT; ++i)
     {
-      strcat(path[i], home);
-      strcat(path[i], "/");
-    }
-
-  strcat(path[0], FILE_SCENARIOS);
-  strcat(path[1], FILE_GENERATIONS);
-
-  FILE *f;
-
-  for (int i = 0; i < FILE_COUNT; ++i)
-    {
-      f = fopen(path[i], "r");
-      if (f)
-        fclose(f);
-      else mkdir_parents(path[i]);
+        f = fopen(path[i], "r");
+        if (f)
+            fclose(f);
+        else mkdir_parents(path[i]);
     }
 }
 

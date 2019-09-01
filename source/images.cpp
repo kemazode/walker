@@ -127,14 +127,19 @@ using std::fstream;
 
 text images_find(const char *image)
 {
-  const char * home = std::getenv("HOME");
+    string path;
 
-  if (home == nullptr)
-      throw game_error("HOME variable is not set.");
+    if (!CUSTOM_CONFIG)
+    {
+        const char * home = std::getenv("HOME");
 
-  string path = home;
-  path = path + "/" + FILE_SCENARIOS + image;
+        if (home == nullptr)
+            throw game_error("HOME variable is not set.");
 
+        path = string(home) + '/' + DEFAULT_CONFIG + DIR_SCENARIOS + image;
+    }
+    else
+        path = string(CUSTOM_CONFIG) + '/' + DIR_SCENARIOS + image;
   fstream f(path);
   string im;
 

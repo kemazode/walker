@@ -291,16 +291,23 @@ void map_generate(arg_t arg)
 void scenario_menu()
 {
   constexpr size_t extension_size = sizeof(".yaml");
-  const char * home = std::getenv("HOME");
 
-  if (home == nullptr)
-    {
-      window_push(BUILD_ERROR, "HOME variable is not set.");
-      return;
-    }
+  string dir;
 
-  string dir = home;
-  dir = dir + '/' + FILE_SCENARIOS;
+  if (!CUSTOM_CONFIG)
+  {
+      const char * home = std::getenv("HOME");
+
+      if (home == nullptr)
+      {
+          window_push(BUILD_ERROR, "HOME variable is not set.");
+          return;
+      }
+
+      dir = string(home) + '/' + DEFAULT_CONFIG + DIR_SCENARIOS;
+  }
+  else
+      dir = string(CUSTOM_CONFIG) + '/' + DIR_SCENARIOS;
 
   vector<unique_ptr<char[]>> paths;
   vector<unique_ptr<char[]>> names;

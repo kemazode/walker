@@ -1,2 +1,6 @@
-Scenarios must be located in "$HOME/.config/walker/scenarios/".
-The generated maps are in "$HOME/.config/walker/generations/".
+Scenarios must be located in "$CONFIG_DIR/scenarios/".
+The generated maps are in "$CONFIG_DIR/generations/".
+
+Usage: walker [options] [-h]
+-c <dir>: set config directory (default: $HOME/.config/walker)
+-h: print this message

@@ -40,8 +40,12 @@
 #define HOSTILE_COLOR COLOR_RED
 
 #define FILE_COUNT 2
-#define FILE_SCENARIOS ".config/walker/scenarios/"
-#define FILE_GENERATIONS ".config/walker/generations/"
+
+extern const char *HELP_MESSAGE;
+extern const char *CUSTOM_CONFIG;
+extern const char *DEFAULT_CONFIG;
+extern const char *DIR_SCENARIOS;
+extern const char *DIR_GENERATIONS;
 
 using std::string;
 using std::runtime_error;

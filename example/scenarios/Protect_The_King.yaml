@@ -36,7 +36,6 @@ objects:
 #   size: <window size>
 #   image: 
 #     file: <image file>
-#     position: <image position>
 #   items:
 #     - 
 #       label: <item label>
@@ -69,9 +68,6 @@ objects:
 
 # Поле "image: file" - устанавливает файл с картинкой
 
-# Поле "image: position" - устанавливает позицию картиники, по умолчанию - вверху, над сообщением ("Top")
-# Варианты: "Top", "Left".
-
 # Поле "message" устанавливает сообщение, выводящееся, при выполнении события. Если
 # это поле оставить пустым, то сообщение не выведется, при этом выполнятся действия из поля "do". (!)
 
@@ -91,7 +87,6 @@ events:
     message: "Praise the gods, you came to the rescue! They are about to break into the King's chambers! Hurry up!" 
     image: 
       file: "Pikeman"
-      position: "Left"
     color: "Friend"
     items:                                     
        -                                    
@@ -112,7 +107,6 @@ events:
     size: "Average"
     image: 
       file: "Devil"
-      position: "Left"
     color: "Hostile"
     message: "The king is dead... Now it's your turn to die."
     do: [ death.run() ]

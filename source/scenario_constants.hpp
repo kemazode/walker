@@ -38,6 +38,7 @@ constexpr const char    *DEFAULT_MAP_ID            = "map";
 constexpr int            DEFAULT_TILE_ATTRIBUTE    = A_INVIS;
 
 constexpr const char *RESERVED_SCENARIO_ID = "scenario";
+constexpr const char *RESERVED_DIALOG_ID = "dialog";
 
 constexpr const char *YAML_IMAGE_MOUNTAINS = "Mountains";
 constexpr const char *YAML_IMAGE_COW       = "Cow";

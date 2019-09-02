@@ -355,7 +355,7 @@ void scenario_menu()
     };
   load_menu.get()[paths.size()] = {};
 
-  window *wptr = window_push(builder(POSITION_SMALL, load_menu.get(), hooks[HOOKS_MENU],
+  window *wptr = window_push(builder(POSITION_AVERAGE, load_menu.get(), hooks[HOOKS_MENU],
                                      "Select the scenario:",
                                      "Scenarios",
                                      OPTION_NORMAL,

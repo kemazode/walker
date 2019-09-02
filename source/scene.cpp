@@ -58,7 +58,7 @@ class scenario {
   events                    m_events;
   objects                   m_objects;
   objects::iterator         m_player      = m_objects.end();
-  vector<string>            m_identifiers = {RESERVED_SCENARIO_ID};
+  vector<string>            m_identifiers = {RESERVED_DIALOG_ID, RESERVED_SCENARIO_ID};
 
   objects::const_iterator find_object(const string& id) const;
   events::const_iterator  find_event(const string& id) const;
@@ -409,6 +409,13 @@ void scenario::parse_command(const string& comm)
 
           return;
         }
+      else if (id == RESERVED_DIALOG_ID)
+      {
+          if (method == "close")
+              window_pop();
+
+          return;
+      }
 
       auto object = find_object(id);
       if (object != m_objects.end())

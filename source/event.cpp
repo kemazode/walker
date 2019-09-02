@@ -80,7 +80,6 @@ event& event::create_from_yaml(const string &id, const yaml_node_t *node, yaml_d
   constexpr int HOOK_MENU = 1;
   event->m_event_hooks.reset(new hook[HOOKS_SIZE]
   {
-    hook('\n',     {fun_t(window_pop), 0}),
     hook('\n',     {fun_t(window_menu_driver), REQ_EXEC_ITEM}), // HOOK_MENU
     hook(KEY_DOWN, {fun_t(window_menu_driver), REQ_DOWN_ITEM}),
     hook(KEY_UP,   {fun_t(window_menu_driver), REQ_UP_ITEM}),

@@ -75,9 +75,10 @@ public:
     event(const event &)            = delete;
     event& operator=(const event &) = delete;
 
-    /* If the check is successful, then execute actions */
+    /* Execute event */
     void run();
     void inc() { ++m_count; }
+    /* If the check is successful, then execute actions */
     bool test();
     bool happened(int count = -1)
     { return count == -1? m_happened : m_happened * (m_count == count); }

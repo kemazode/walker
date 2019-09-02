@@ -5,4 +5,4 @@ Usage: walker [options] [-h]
 -c <dir>: set config directory (default: $HOME/.config/walker)
 -h: print this message
 ```
-![Main screen](images/main_screen.png)
+![Main screen](images/scene.png)

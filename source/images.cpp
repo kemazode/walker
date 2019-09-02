@@ -19,7 +19,6 @@
 #include <fstream>
 
 static text cow =
-    "                    \n"
     "^__^                \n"
     "(oo)\\_______       \n"
     "(__)\\       )\\/\\ \n"
@@ -27,7 +26,6 @@ static text cow =
     "    ||     ||       \n";
 
 static text centaur =
-    "                     \n"
     "           ,~,       \n"
     "          (((}       \n"
     "          -''-.      \n"
@@ -40,7 +38,6 @@ static text centaur =
     "    |\\|\\   /| |\\  \n";
 
 static text horseback_fight =
-    "                      \n"
     "        y             \n"
     "       /`'            \n"
     "       \\ O ,         \n"
@@ -51,7 +48,7 @@ static text horseback_fight =
     "     \\       /  \\   \n";
 
 static text mountains =
-text("                                                                   \n"
+text(
     "             _,_           ")+text("+", A_BLINK)+"                   __\n"
     "             ','                  /\\          `. `.               \n"
     "       .                        .'  \\    +      \"  |             \n"
@@ -70,7 +67,6 @@ text("                                                                   \n"
     "                                                                   \n";
 
 static text pikeman =
-    "                                      \n"
     "   ,   A           {}                 \n"
     "  / \\, | ,        .--.               \n"
     " |    =|= >      /.--.\\              \n"
@@ -93,7 +89,6 @@ static text pikeman =
     "       |      /____/\\____\\          \n";
 
 static text scroll_and_ink_pen =
-    "                              \n"
     "(\\                           \n"
     " \'\\                         \n"
     "  \'\\     __________         \n"
@@ -104,7 +99,6 @@ static text scroll_and_ink_pen =
     "   (__)       ()__________)   \n";
 
 static text open_book =
-    "                          \n"
     "      ______ ______       \n"
     "    _/      Y      \\_    \n"
     "   // ~~ ~~ | ~~ ~  \\\\  \n"
@@ -156,7 +150,5 @@ text images_find(const char *image)
       if (temp.size() > max_line) max_line = temp.size();
     }
 
-  im.insert(im.begin(), '\n');
-  im.insert(im.begin(), max_line, ' ');
   return im;
 }

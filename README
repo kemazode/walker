@@ -4,3 +4,5 @@ The generated maps are in "$CONFIG_DIR/generations/".
 Usage: walker [options] [-h]
 -c <dir>: set config directory (default: $HOME/.config/walker)
 -h: print this message
+
+![alt text](images/main_screen.png?raw=true "Main screen")

@@ -1,3 +1,19 @@
+/* This file is part of Walker.
+ * 
+ * Walker is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ * 
+ * Walker is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ * 
+ * You should have received a copy of the GNU General Public License
+ * along with Walker.  If not, see <https://www.gnu.org/licenses/>.
+*/
+
 #ifndef SCENARIO_CONSTANTS_HPP
 #define SCENARIO_CONSTANTS_HPP
 
@@ -20,7 +36,6 @@ constexpr const char *YAML_EVENT_SIZE           = "size";
 constexpr const char *YAML_EVENT_ATTRIBUTE      = "color";
 constexpr const char *YAML_EVENT_IMAGE          = "image";
 constexpr const char *YAML_EVENT_IMAGE_FILE     = "file";
-constexpr const char *YAML_EVENT_IMAGE_POSITION = "position";
 constexpr const char *YAML_EVENT_ITEMS          = "items";
 constexpr const char *YAML_EVENT_COMMANDS       = "do";
 constexpr const char *YAML_EVENT_ITEM_LABEL     = "label";

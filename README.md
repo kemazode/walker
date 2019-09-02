@@ -1,4 +1,4 @@
-Scenarios must be located in "$CONFIG_DIR/scenarios/".\n
+Scenarios must be located in "$CONFIG_DIR/scenarios/".<br/>
 The generated maps are in "$CONFIG_DIR/generations/".
 ```
 Usage: walker [options] [-h]

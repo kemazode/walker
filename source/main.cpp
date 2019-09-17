@@ -22,25 +22,22 @@
 #include <cstring>
 #include <csignal>
 #include <cerrno>
-#include <unistd.h>
 #include "ui.hpp"
+#include "cmdline.h"
 
 static void sig_winch(const int signo);
 static void mkdir_parents(const char *dir);
 static void init_dirs();
 
 int main(int argc, char **argv)
-{      
-  int c;
-  while ((c = getopt(argc, argv, "hc:")) != -1)
-    switch (c) {
-      case 'c':
-        CUSTOM_CONFIG = optarg;
-        break;
-    default:
-        std::cerr << HELP_MESSAGE;
-        return 1;
-    }
+{
+    gengetopt_args_info args_info;
+
+    if (cmdline_parser(argc, argv, &args_info) != 0)
+        exit(1);
+
+    if (args_info.config_given)
+        CUSTOM_CONFIG = args_info.config_arg;
 
   initscr();
   signal(SIGWINCH, sig_winch);
@@ -60,6 +57,7 @@ int main(int argc, char **argv)
   while(window_top())
     window_hook();
   endwin();
+  cmdline_parser_free(&args_info);
 }
 
 void sig_winch(const int signo)

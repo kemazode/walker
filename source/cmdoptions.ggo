@@ -1,0 +1,12 @@
+package "walker"
+version "0.1.0"
+purpose "walker is a game use yaml for making scenarios."
+usage "walker [OPTION]..."
+
+#description ""
+
+versiontext "License: GPLv3+: GNU GPL version 3 or later.\nThis is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nWritten by yachmenka <yachmenka.git@gmail.com>"
+
+option "config"  C "Set config directory" string typestr="<dir>" default="$HOME/.config/walker" optional
+
+text "\nLicense: GPLv3+: GNU GPL version 3 or later.\nThis is free software; see the source for copying conditions. There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n\nWritten by yachmenka <yachmenka.git@gmail.com>"

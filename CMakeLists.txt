@@ -15,6 +15,7 @@ set(SOURCES source/main.cpp
             source/map.cpp
             source/ui.cpp
             source/images.cpp
+            source/cmdline.c
             )
             
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)

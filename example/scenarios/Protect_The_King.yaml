@@ -106,7 +106,7 @@ events:
     do: [ ] 
 
   ambush:
-    if: [ flag.happened(10) ]    
+    if: [ flag.happened(20) ]    
     size: "Average"
     image: 
       file: "Devil"

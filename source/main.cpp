@@ -23,7 +23,11 @@
 #include <csignal>
 #include <cerrno>
 #include "ui.hpp"
-#include "cmdline.h"
+#include "opts.h"
+
+#ifndef PATH_MAX
+# define PATH_MAX 4096
+#endif
 
 static void sig_winch(const int signo);
 static void mkdir_parents(const char *dir);
@@ -36,103 +40,78 @@ int main(int argc, char **argv)
     if (cmdline_parser(argc, argv, &args_info) != 0)
         exit(1);
 
+    const char *home = std::getenv("HOME");
     if (args_info.config_given)
-        CUSTOM_CONFIG = args_info.config_arg;
+        (CONFIG = args_info.config_arg).append("/");
+    else if (!home) {
+        std::cerr << "HOME variable is not specified." << std::endl;
+        exit(EXIT_FAILURE);
+    } else {
+        CONFIG = home + CONFIG;
+    }
 
-  initscr();
-  signal(SIGWINCH, sig_winch);
-  curs_set(FALSE);
-  keypad(stdscr, true);
-  noecho();
-  start_color();
+    initscr();
+    signal(SIGWINCH, sig_winch);
+    curs_set(FALSE);
+    keypad(stdscr, true);
+    noecho();
+    start_color();
 
-  for (short i = 1; i <= 64; ++i)
-    init_pair(i, (i - 1)%8, (i - 1)/8);
+    for (short i = 1; i <= 64; ++i)
+        init_pair(i, (i - 1)%8, (i - 1)/8);
 
-  /* Create config directories if they did not exist */
-  init_dirs();
+    /* Create config directories if they did not exist */
+    init_dirs();
 
-  window_push(BUILD_MAIN);
+    window_push(BUILD_MAIN);
 
-  while(window_top())
-    window_hook();
-  endwin();
-  cmdline_parser_free(&args_info);
+    while(window_top())
+        window_hook();
+    endwin();
+    cmdline_parser_free(&args_info);
 }
 
 void sig_winch(const int signo)
 {
-  (void) signo;
-  struct winsize size {};
-  ioctl(fileno(stdout), TIOCGWINSZ, reinterpret_cast<char *>(&size));
-  resizeterm(size.ws_row, size.ws_col);
+    (void) signo;
+    struct winsize size {};
+    ioctl(fileno(stdout), TIOCGWINSZ, reinterpret_cast<char *>(&size));
+    resizeterm(size.ws_row, size.ws_col);
 }
 
 void init_dirs()
 {
-    char path[FILE_COUNT][PATH_MAX] {};
-
-    /* If custom config is not set */
-    if (!CUSTOM_CONFIG)
-    {
-        const char *home = getenv("HOME");
-
-        if (!home)
-        {
-            window_push(BUILD_ERROR, "HOME variable is not set.");
-            return;
-        }
-
-        for (int i = 0; i < FILE_COUNT; ++i)
-        {
-            strcat(path[i], home);
-            strcat(path[i], "/");
-        }
-
-        strcat(path[0], DEFAULT_CONFIG);
-        strcat(path[1], DEFAULT_CONFIG);
-    }
-    else {
-        strcat(path[0], CUSTOM_CONFIG);
-        strcat(path[1], CUSTOM_CONFIG);
-        strcat(path[0], "/");
-        strcat(path[1], "/");
-    }
-
-    strcat(path[0], DIR_SCENARIOS);
-    strcat(path[1], DIR_GENERATIONS);
+    string path[2] = {CONFIG + DIR_SCENARIOS, CONFIG + DIR_GENERATIONS};
 
     FILE *f;
-
-    for (int i = 0; i < FILE_COUNT; ++i)
-    {
-        f = fopen(path[i], "r");
+    for (int i = 0; i < FILE_COUNT; ++i) {
+        f = fopen(path[i].c_str(), "r");
         if (f)
             fclose(f);
-        else mkdir_parents(path[i]);
+        else mkdir_parents(path[i].c_str());
     }
 }
 
 void mkdir_parents(const char *dir)
 {
-  char tmp[PATH_MAX];
-  char *p = nullptr;
-  size_t len;
+    char tmp[PATH_MAX];
+    char *p = nullptr;
+    size_t len;
 
-  snprintf(tmp, sizeof(tmp),"%s",dir);
-  len = strlen(tmp);
+    snprintf(tmp, sizeof(tmp),"%s",dir);
+    len = strlen(tmp);
 
-  if(tmp[len - 1] == '/')
-    tmp[len - 1] = 0;
+    if(tmp[len - 1] == '/')
+        tmp[len - 1] = 0;
 
-  for(p = tmp + 1; *p; p++)
-    if (*p == '/')
-      {
-        *p = 0;
-        mkdir(tmp, S_IRWXU);
-        *p = '/';
-      }
+    for(p = tmp + 1; *p; p++)
+        if (*p == '/')
+        {
+            *p = 0;
+            mkdir(tmp, S_IRWXU);
+            *p = '/';
+        }
 
-  mkdir(tmp, S_IRWXU);
+    mkdir(tmp, S_IRWXU);
 }
 

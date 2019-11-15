@@ -121,25 +121,14 @@ using std::fstream;
 
 text images_find(const char *image)
 {
-    string path;
+  string path = CONFIG + DIR_SCENARIOS + image;
 
-    if (!CUSTOM_CONFIG)
-    {
-        const char * home = std::getenv("HOME");
-
-        if (home == nullptr)
-            throw game_error("HOME variable is not set.");
-
-        path = string(home) + '/' + DEFAULT_CONFIG + DIR_SCENARIOS + image;
-    }
-    else
-        path = string(CUSTOM_CONFIG) + '/' + DIR_SCENARIOS + image;
   fstream f(path);
-  string im;
 
   if (!f.good())
     throw game_error(string("We can't open image file \"") + image + "\".");
 
+  string im;
   size_t max_line = 0;
   while (f.good())
     {

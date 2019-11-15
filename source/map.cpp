@@ -158,18 +158,7 @@ void character_map::generate(const string& f, int w, int h)
 
 string character_map::generate(int w, int h)
 {
-    string folder;
-    if (!CUSTOM_CONFIG)
-    {
-        const char* home = getenv("HOME");
-
-        if (home == nullptr)
-            throw game_error("HOME environment variable not set.");
-
-        folder = string(home) + '/' + DEFAULT_CONFIG + DIR_GENERATIONS;
-    }
-    else
-        folder = string(CUSTOM_CONFIG) + '/' + DIR_GENERATIONS;
+  string folder = CONFIG + DIR_GENERATIONS;
 
   ifstream fil;
   int count = 0;

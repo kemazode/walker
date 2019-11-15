@@ -41,9 +41,7 @@
 
 #define FILE_COUNT 2
 
-extern const char *HELP_MESSAGE;
-extern const char *CUSTOM_CONFIG;
-extern const char *DEFAULT_CONFIG;
+extern std::string CONFIG;
 extern const char *DIR_SCENARIOS;
 extern const char *DIR_GENERATIONS;
 

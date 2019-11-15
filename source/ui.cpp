@@ -292,22 +292,7 @@ void scenario_menu()
 {
   constexpr size_t extension_size = sizeof(".yaml");
 
-  string dir;
-
-  if (!CUSTOM_CONFIG)
-  {
-      const char * home = std::getenv("HOME");
-
-      if (home == nullptr)
-      {
-          window_push(BUILD_ERROR, "HOME variable is not set.");
-          return;
-      }
-
-      dir = string(home) + '/' + DEFAULT_CONFIG + DIR_SCENARIOS;
-  }
-  else
-      dir = string(CUSTOM_CONFIG) + '/' + DIR_SCENARIOS;
+  string dir = CONFIG + DIR_SCENARIOS;
 
   vector<unique_ptr<char[]>> paths;
   vector<unique_ptr<char[]>> names;
